@@ -1,4 +1,19 @@
 
+#'
+#'## MRV Notes: 
+#'###Missing data:
+#' - SD NOP, Sauger/saugeye
+#' - MN files: "Aged Fish" and "Aged Fish 1" (not clear to me what these are)
+#' - WI Lk Winnebago all species
+#' - IN, IL, IA, KS, NE, ON, AR
+#' - MI appears complete. 
+#'
+
+
+
+
+
+
 
 # packages ####
 rm(list=ls(all=TRUE))
@@ -14,7 +29,7 @@ species <- c("BLG", "WAE", "BLC", "LMB", "SMB", "YEP", "NOP")
 ## MN ####
 
 #import MN aged fish dat
-mn.new <- read.csv("scripts&data/data/input/ALL_AGED_FISH 2.csv", header = T)
+mn.new <- read.csv("E:/Shared drives/Hansen Lab/RESEARCH PROJECTS/Fish Survey Data/Growth_Analysis_Files/ALL_AGED_FISH 2.csv", header = T)
 names(mn.new)
 
 # this is *maybe* stripping out erroneous entries?
@@ -38,7 +53,7 @@ mn.yoy <- mn.new %>%
 # heres a single line of code to do many things
 mn <- inner_join(bind_rows(mn.cor, mn.msh, mn.yoy) %>% #rebind the three corrected sets
                    dplyr::select(ID_NBR, SRVY_DT, SP, COMMON_NAME, LEN_MM, OFFICIAL_AGE, SURVEY_ID, GEARTP, WT_G),
-                 read.csv("scripts&data/data/input/mn_lake_list.csv", header = T) %>%
+                 read.csv("E:/Shared drives/Hansen Lab/RESEARCH PROJECTS/Fish Survey Data/Growth_Analysis_Files/mn_lake_list.csv", header = T) %>%
                    mutate(DOW = str_pad(DOW, width = 8, pad = 0)) %>%
                    dplyr::select(DOW, LAKE_CENTER_LAT_DD5, LAKE_CENTER_LONG_DD5),
                  by = c("ID_NBR"="DOW")) %>% 
@@ -67,8 +82,8 @@ mn.new %>%
 ## MI ####
 
 #does a bunch of MI data munging in one line
-mi <- inner_join(read.csv("scripts&data/data/input/mi_snt_age_2002_2020_cleaned.csv", header = T), 
-                 read.csv("scripts&data/data/input/mi_snt_catch_data_mar2021.csv", header = T) %>% 
+mi <- inner_join(read.csv("E:/Shared drives/Hansen Lab/RESEARCH PROJECTS/Fish Survey Data/Growth_Analysis_Files/mi_snt_age_2002_2020_cleaned.csv", header = T), 
+                 read.csv("E:/Shared drives/Hansen Lab/RESEARCH PROJECTS/Fish Survey Data/Growth_Analysis_Files/mi_snt_catch_data_mar2021.csv", header = T) %>% 
   dplyr::select(Survey_Number, LONG_DD, LAT_DD, Water_Body_Name, NEW_KEY) %>% distinct(), by = "Survey_Number") %>% 
   mutate(Date = dmy(Collection_Date),
          year = year(Date),
@@ -88,9 +103,9 @@ summary(as.factor(mi$species))
 
 
 ## WI ####
-#wi.catch <- read.csv("/Volumes/MNPostDoc/Growth/WI_raw_disaggregated_data_4.6.21/wdnr_inland_fish_data-002.csv", header = T)
+#wi.catch <- read.csv("...//wdnr_inland_fish_data-002.csv", header = T)
 
-wi.len <- read.csv("/Volumes/MNPostDoc/Growth/WI_raw_disaggregated_data_4.6.21/wdnr_inland_lenage_data.csv", header = T) %>% 
+wi.len <- read.csv("E:/Shared drives/Hansen Lab/RESEARCH PROJECTS/Fish Survey Data/Growth_Analysis_Files/wi_inland_lenage_19Mar2021.csv", header = T) %>% 
   mutate(Date = as.Date(str_sub(sample.date, 1, - 11)),
          year = year(Date),
          year.b = year - age, 
@@ -98,7 +113,7 @@ wi.len <- read.csv("/Volumes/MNPostDoc/Growth/WI_raw_disaggregated_data_4.6.21/w
          weight.g = round(weight*453.592, digits = 1)) %>%
   dplyr::rename(Lake.ID = wbic, Survey_ID = survey.seq.no, Gear = gear) %>%
   dplyr::select(Survey_ID, Lake.ID, Gear, Date, species, Length.mm, weight.g, age, year, year.b)
-wi.loc <- read.csv("/Volumes/MNPostDoc/Growth/WI lat long.csv", header = T) %>% mutate(Lake.ID = as.integer(WBIC)) %>% 
+wi.loc <- read.csv("E:/Shared drives/Hansen Lab/RESEARCH PROJECTS/Fish Survey Data/Growth_Analysis_Files/wi_lake_wbic_lat_long.csv", header = T) %>% mutate(Lake.ID = as.integer(WBIC)) %>% 
   dplyr::select(-WBIC) %>% 
   dplyr::rename(lat = Latitude, long = Longitude)
 
@@ -111,21 +126,25 @@ summary(as.factor(wi$species))
 ## SD ####
 library(sf)
 
-sd.age <- read_xlsx("/Volumes/MNPostDoc/Growth/South Dakota 10-04-2021/University_of_Minnesota_SD_Lake_Survey_Fish_Data.xlsx", sheet = "AgedFish") %>% 
+sd.age <- read.csv("E:/Shared drives/Hansen Lab/RESEARCH PROJECTS/Fish Survey Data/Growth_Analysis_Files/sd_length_age_4Oct2021.csv") %>% 
   dplyr::select(SurveyID, SpeciesName, Length, Age) %>% 
   dplyr::rename(Survey_ID = SurveyID, species = SpeciesName, Length.mm = Length, age = Age) %>% 
   mutate(weight.g = NA)
 
-sd.srvy <- read_xlsx("/Volumes/MNPostDoc/Growth/South Dakota 10-04-2021/University_of_Minnesota_SD_Lake_Survey_Fish_Data.xlsx", sheet = "Survey") %>% 
+sd.srvy <- read.csv("E:/Shared drives/Hansen Lab/RESEARCH PROJECTS/Fish Survey Data/Growth_Analysis_Files/sd_effort_4Oct2021.csv") %>% 
   dplyr::select(SurveyDate, StateID, SurveyID, Method) %>% 
   dplyr::rename(Date = SurveyDate, Lake.ID = StateID, Survey_ID = SurveyID, Gear = Method) %>% 
-  mutate(Date = as.Date(Date))
+  mutate(Date = as.Date(Date, format = "%m/%d/%Y"))
+
+# something is awry with these shafefiles, they've got no data, just geoms
+# sd.site <- read_sf("E:/Shared drives/Hansen Lab/RESEARCH PROJECTS/Fish Survey Data/Growth_Analysis_Files/sd_lake_shapefiles/ManagedFisheries.shp")
+
+sd.site.s <- read.csv("E:/Shared drives/Hansen Lab/RESEARCH PROJECTS/Fish Survey Data/Growth_Analysis_Files/ManagedFisheries.csv")
+
+colnames(sd.site.s)  <- word(colnames(sd.site.s), start = 1L , sep = fixed("."))
 
 
-sd.site <- st_read("/Volumes/MNPostDoc/Growth/South Dakota 10-04-2021/ManagedFisheries.shp")
-
-  
-sd.cnt <- st_centroid(sd.site)  %>% data.frame() %>% 
+sd.cnt <- sd.site.s %>% 
   dplyr::select(StateID, Latitude, Longitude) %>% 
   dplyr::rename(Lake.ID = StateID, lat = Latitude, long = Longitude) %>% 
   filter(Lake.ID %ni% NA)
@@ -134,7 +153,8 @@ sd <- inner_join(inner_join(sd.age, sd.srvy, by = "Survey_ID"),
                  sd.cnt, by = "Lake.ID") %>% 
   mutate(year = year(Date),
          year.b = year - age,
-         state = "sd")
+         state = "sd", 
+         Length.mm = as.numeric(Length.mm))
 
 summary(as.factor(sd$species))
 ## data combine ####              
@@ -164,7 +184,7 @@ dat <- bind_rows(sd, mn, mi, wi) %>%
                             species %in% c("CCF", "Channel Catfish") ~ "channel_catfish"))
 
 dat.sites <- dat %>% dplyr::select(Lake.ID, lat, long, species1) %>% distinct()
-saveRDS(object = dat, "data/Length.Age.all.species.rds")
+# saveRDS(object = dat, "data/Length.Age.all.species.rds")
 
 ## Figure map ####
 MainStates <- map_data("state") #%>% filter(., region %in% c("montana", "minnesota", "michigan", "north dakota", "iowa", "wisconsin", "missouri"))
