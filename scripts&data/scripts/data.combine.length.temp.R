@@ -184,7 +184,7 @@ dat <- bind_rows(sd, mn, mi, wi) %>%
                             species %in% c("CCF", "Channel Catfish") ~ "channel_catfish"))
 
 dat.sites <- dat %>% dplyr::select(Lake.ID, lat, long, species1) %>% distinct()
-# saveRDS(object = dat, "data/Length.Age.all.species.rds")
+saveRDS(object = dat, "scripts&data/data/output/Length.Age.all.species.rds")
 
 ## Figure map ####
 MainStates <- map_data("state") #%>% filter(., region %in% c("montana", "minnesota", "michigan", "north dakota", "iowa", "wisconsin", "missouri"))

@@ -11,13 +11,13 @@ library(USAboundaries)
 
 # data ####
 ## fish ####
-dat.fish <- readRDS(file = "data/Length.Age.all.species.rds") %>% 
+dat.fish <- readRDS(file = "scripts&data/data/output/Length.Age.all.species.rds") %>% 
   dplyr::select(Lake.ID, state, lat, long) %>% distinct() %>% 
   dplyr::rename(y_DD5 = lat, x_DD5 = long) %>% 
-  filter(y_DD5 %ni% NA, x_DD5 %ni% NA)
+  filter(!is.na(y_DD5), !is.na(x_DD5))
 
 ## USGS lake data ####
-lake.usgs <- read.csv("data/lake_metadata.csv", header = T) %>% 
+lake.usgs <- read.csv("E:/Shared drives/Hansen Lab/RESEARCH PROJECTS/Fish Survey Data/Growth_Analysis_Files/lake_metadata.csv", header = T) %>% 
   dplyr::select(site_id, elevation_m, area_m2, lake_lon_deg, lake_lat_deg, group_id) %>% 
   dplyr::rename(x_DD5 = lake_lon_deg, y_DD5 = lake_lat_deg)
 
@@ -37,7 +37,7 @@ study.Area <- ggplot() +
         axis.ticks = element_blank(),
         axis.title = element_blank())
 
-ggsave("Figures/StudyArea.pdf", study.Area)
+ggsave("figs/StudyArea.pdf", study.Area)
 
 
 # Spatial Join ####
@@ -52,7 +52,7 @@ lakes.shp <- st_transform(st_as_sf(dat.fish, coords = c("x_DD5", "y_DD5"), crs =
 l.usgs.shp <- st_transform(st_as_sf(lake.usgs, coords = c("x_DD5", "y_DD5"), crs = wgs84), crs = utm15)
 
 ## state import ####
-states <- st_transform(st_read("Shapefiles/cb_2018_us_state_500k/cb_2018_us_state_500k.shp") %>% 
+states <- st_transform(st_read("E:/Shared drives/Hansen Lab/RESEARCH PROJECTS/Fish Survey Data/Growth_Analysis_Files/cb_2018_us_state_500k/cb_2018_us_state_500k.shp") %>% 
                          filter(NAME %in% c("Wisconsin", "Minnesota", "South Dakota", "Michigan")) %>% 
                          dplyr::select(NAME), crs = utm15)
 
@@ -64,7 +64,7 @@ l.buff <- st_buffer(lakes.shp, dist = 10000)
 ## intersection between lake buffer and usgs lakes
 usgs.int <- st_intersection(l.buff, l.usgs.shp)
 
-## distance matrix between all lakes
+## distance matrix between all lakes (5 minutes ish)
 dist.all <- st_distance(usgs.int,lakes.shp)
 
 ## loop to identify matching lakes 
@@ -102,7 +102,7 @@ for(i in 1:length(dat.final[,1])) {
 }
 
 
-saveRDS(match.lakes, "data/StudyAreaLake.rds")
+saveRDS(match.lakes, "scripts&data/data/output/StudyAreaLake.rds")
 
 dist.all[,36]
 
