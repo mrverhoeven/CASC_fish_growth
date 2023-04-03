@@ -157,6 +157,9 @@ sd <- inner_join(inner_join(sd.age, sd.srvy, by = "Survey_ID"),
          Length.mm = as.numeric(Length.mm))
 
 summary(as.factor(sd$species))
+
+## SD ####
+
 ## data combine ####              
  str(mn) 
  str(mi) 
