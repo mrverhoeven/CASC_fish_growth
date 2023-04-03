@@ -64,6 +64,8 @@ growth_files <- list.files(path = "E:/Shared drives/Hansen Lab/RESEARCH PROJECTS
 
 n <- length(growth_files)
 
+nobs <- 0
+
 for(i in 1:n) {
   #i = 1
   filei <- word(gsub(".csv","", growth_files[i]), start = -1, sep = fixed("/"))
@@ -117,24 +119,74 @@ for(i in 1:n) {
   get(filei)[ , (names[ !newname %in% colnames(get(filei)) , newname , ]) := unusedbits[] ]
 
   #confirm import of files:  
-  print(paste(word(gsub(".csv","", growth_files[i]), start = -1, sep = fixed("/")) ,"added to workspace" ))  
+  print(paste(filei ,"added to workspace" ))  
+  
+  #count rows added:
+  nobs <- nobs + nrow(get(filei))
+  
+  print(nobs)
   
 }  
 
 
+
+
 #now start merging these together
+
+cols <- c("lake_name", "year", "species.1", "age", "length.1", "length_unit.1")
+
+# Arkansas
 
 names(ar_reservoir_age_8Oct2021)
 
 names(ar_reservoir_age2_8Oct2021)
 
-merge.data.table(ar_reservoir_age_8Oct2021, ar_reservoir_age2_8Oct2021, by = c("lake_name", "year", "age", "length.1"))
+ar <- merge.data.table(ar_reservoir_age_8Oct2021, ar_reservoir_age2_8Oct2021,  all = T)
 
-ar_reservoir_age_8Oct2021[ , .N , lake_name]
 
-ar_reservoir_age2_8Oct2021[ , .N ,  lake_name]
+ar[ , summary(.SD) , .SDcols = cols]
 
-merge.data.table(ar)
+
+#lake names
+ar[ , .N , lake_name]
+ar[lake_name == "BSL", lake_name := "Bull Shoals Lake"]
+ar[lake_name == "NFL", lake_name := "Norfork Lake"]
+
+
+#species:
+ar[ , .N , species.1]
+#renaming table (from metadata in GDrive)
+ar_rename <- transpose(keep.names = "oldname", data.table(BLC = "black_crappie",
+LMB = "largemouth_bass",
+SMB = "smallmouth_bass",
+SPB = "spotted_bass",
+WAL = "walleye",
+WHC = "white_crappie",
+BCP = "black_crappie",
+WCP = "white_crappie"))
+#execute
+ar[ , species.1 := 
+      ar_rename[match(ar[ ,species.1],ar_rename[,oldname]) ,
+                V1 , ]
+    , ]
+
+
+# year
+ar[ , .N , year ]
+ar[is.na(year) , , ]
+
+#age
+ar[ , .N , age ]
+
+#length
+ar[ , .N , length_unit.1 ]
+ar[ , .N , length.1 ]
+
+ar[ length_unit.1 == "col_name_Length_in" ,  ':=' (length.1 = length.1 * 25.4, length_unit.1 = "col_name_Length..mm." )   ,  ]
+
+ar[length_unit.1 == "col_name_Length..mm." , length_unit.1 := "milimeters" ]
+ar[ , mean(length.1) , species.1]
+
 
 
 #' 
