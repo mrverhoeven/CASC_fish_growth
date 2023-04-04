@@ -1,0 +1,76 @@
+# import data explainer and prep for data cleaning
+
+
+library(readr)
+library(readxl)
+library(dplyr)
+library(stringr)
+library(arrow)
+library(data.table)
+# update_dev_pkg()
+library(googledrive)
+library(janitor)
+library(tidyr)
+# install.packages("tidyr")
+
+
+
+
+
+cde <- data.table(read_excel("E:/Shared drives/Hansen Lab/RESEARCH PROJECTS/Fish Survey Data/CASC_Data_Explainer_for_R_Data_Manipulation.xlsx")) #set as DT on the fly
+
+
+#tidy up those column names
+# colnames(cde)
+cde <- clean_names(cde) #all lwr case, only _ and letters & numbers
+
+
+# even we can't get our data straight! r/r commas with semicolons 
+cols = colnames(cde)[colnames(cde) != "source_agency" ] # can choose which cols to do action on here skipping source agency b/c "South Dakota Game, Fish and Parks"
+
+#r/r commas to semicolons
+cde[, (cols) := #rebuild each column ()
+      lapply(.SD, function(x){str_replace_all(x , pattern = ",", replacement = ";")}), #by looking through each cell and r/r commas with semicolons
+    .SDcols = cols ]  # do the rebuild on cols selected in the cols object
+
+#expand each col to the maxN of col names in any row that column
+cols = colnames(cde)#what are current colnames
+
+#get a vector of how many columns named in each cde column:
+maxn <- unlist(cde[, 
+                   lapply(.SD,function(x){max(lengths(str_split(x, pattern = ";")))}), # how many units are in here? each unit is sep by a semicolon, count col names, then use the max
+                   .SD ][1], use.names = F)
+
+#split each multi-content column into many:
+for (i in 1:length(colnames(cde)[maxn > 1])) {
+  # i =3
+  cde[, paste(colnames(cde)[maxn > 1][i],
+              1:c(maxn[maxn > 1][i]),
+              sep = ".") :=
+        tstrsplit(get(colnames(cde)[maxn > 1][i]),
+                  ";",
+                  fixed=TRUE
+        )
+  ]
+  
+  cde[ ,
+       paste(colnames(cde)[maxn > 1][i], 1:c(maxn[maxn > 1][i]), sep = ".") := 
+         lapply( .SD, trimws) ,
+       .SDcols = paste(colnames(cde)[maxn > 1][i], 1:c(maxn[maxn > 1][i]), sep = ".") ]
+  
+  
+  
+}
+
+# now clean up all of the leading and trailing whitespace we created in that split
+
+
+
+# colnames(cde)
+# 
+# cbind(cols,maxn)
+
+cde[ , cols[maxn > 1] := NULL ,  ] #remove the original columns (now the first case within a col is colname.1) 
+
+# colnames(cde)
+
