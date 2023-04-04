@@ -1,5 +1,8 @@
 # import data explainer and prep for data cleaning
 
+# on 4 April I borke this by adding "notes" tag to a few columns
+
+
 
 library(readr)
 library(readxl)
