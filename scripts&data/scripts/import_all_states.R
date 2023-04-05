@@ -1,6 +1,6 @@
 #' # Aggregating Length at Age Data
 #' 
-#' # on 4 April I borke this by adding "notes" tag to a few columns
+
 #' 
 
 # library(readr)
@@ -69,7 +69,7 @@ n <- length(growth_files)
 nobs <- 0
 
 for(i in 1:n) {
-  #i = 1
+  #i = 3
   filei <- word(gsub(".csv","", growth_files[i]), start = -1, sep = fixed("/"))
   #this does those two steps in one package
   assign(filei ,
@@ -101,6 +101,10 @@ for(i in 1:n) {
   # append old col names into new "notes" columns:
   get(filei)[ , (names[ str_detect(newname, "notes") , oldname   ,  ]) := Map(paste, colnames(.SD), .SD, sep = ':') , .SDcols =  names[ str_detect(newname, "notes") , oldname   ,  ] ]
   
+  
+  
+  
+  
   #now rename that file's colnames
   setnames(get(filei), colnames(get(filei)), names[!str_detect(newname,"unique_row_key")] [match(names(get(filei)),names[!str_detect(newname,"unique_row_key"),oldname]), newname] )
   
@@ -119,6 +123,11 @@ for(i in 1:n) {
   
   #add all not yet used columns from data explainer:
   get(filei)[ , (names[ !newname %in% colnames(get(filei)) , newname , ]) := unusedbits[] ]
+  
+  #purge any cols full of NAs
+  assign(filei,
+         get(filei)[ , .SD , .SDcols = colnames(get(filei))[unlist(get(filei)[ , lapply(.SD,function(x) !all(is.na(x))), ])] ,  ]
+  )
 
   #confirm import of files:  
   print(paste(filei ,"added to workspace" ))  
