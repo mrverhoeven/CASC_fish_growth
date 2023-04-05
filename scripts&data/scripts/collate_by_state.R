@@ -102,15 +102,19 @@ ar[sex == "?" , sex := "unk", ]
 #bring critical cols to left
 setcolorder(ar, c(cols,"date_clean", "aging_method"))
 
-rm(ar_reservoir_age_8Oct2021, ar_reservoir_age2_8Oct2021)
+rm(ar_reservoir_age_8Oct2021, ar_reservoir_age2_8Oct2021, ar_rename)
 
 #IOWA
 
-ia <- rbindlist(list(ia_age_length_21Aug2021,ia_BLG_age_length_21Aug2021), fill = TRUE, use.names = TRUE)
+ia <- rbindlist(list(rbindlist(list(ia_CCF_age_length_21Aug2021,
+                                    ia_BLG_age_length_21Aug2021),
+                               fill = TRUE,
+                               use.names = TRUE),
+                     ia_age_length_21Aug2021),
+                fill = TRUE,
+                use.names = TRUE)
 
-ia <- merge.data.table(ia_age_length_21Aug2021, 
-                       merge.data.table(ia_BLG_age_length_21Aug2021, ia_CCF_age_length_21Aug2021 , all = T), 
-                       all = T, )
+
 
 
 
