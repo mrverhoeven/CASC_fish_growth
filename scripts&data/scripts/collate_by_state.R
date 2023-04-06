@@ -104,6 +104,19 @@ setcolorder(ar, c(cols,"date_clean", "aging_method"))
 
 rm(ar_reservoir_age_8Oct2021, ar_reservoir_age2_8Oct2021, ar_rename)
 
+#get lat/long for locs:
+
+ar[ , .N , .(lake_name, location_notes.1, latitude, longitude) ]
+
+ar[ lake_name == "Norfork Lake" , ':=' (latitude = "36.351351" , longitude = "-92.232243")   , ]
+ar[ lake_name == "Bull Shoals Lake" , ':=' (latitude = "36.486572" , longitude = "-92.894508")   , ]
+ar[ location_notes.1 == "Location:James River Arm" , ':=' (latitude = "36.718906601766705" , longitude = "-93.59351150562455")   , ]
+ar[ location_notes.1 == "Location:Kings River Arm" , ':=' (latitude = "36.55397644090967" , longitude = "-93.50610006173052")   , ]
+ar[ location_notes.1 == "Location:Mid White River Arm" , ':=' (latitude = "36.60279620933327" , longitude = "-93.50610006173052")   , ]
+ar[ location_notes.1 == "Location:Long Creek Arm" , ':=' (latitude = "36.48231274609963" , longitude = "-93.3020160955791")   , ]
+ar[ location_notes.1 == "Location:Upper White River Arm" , ':=' (latitude = "36.52369836589746" , longitude = "-93.72775995312399")   , ]
+
+
 #IOWA
 
 ia <- rbindlist(list(rbindlist(list(ia_CCF_age_length_21Aug2021,
@@ -114,11 +127,27 @@ ia <- rbindlist(list(rbindlist(list(ia_CCF_age_length_21Aug2021,
                 fill = TRUE,
                 use.names = TRUE)
 
+names(ia)
+cols <- c("state", "county","lake_name", "lake_id", #loc dat
+          "year","date.1", #date dat
+          "species.1", "age", "length.1", "length_unit.1", #core fish dat
+          "weight.1", "weight_unit.1", "aging_structure", "sex", "aging_data_notes.1", "aging_data_notes.2" #extra useful bits
+)
+setcolorder(ia,c(cols))
 
 
 
 
+#locdat
+# is there any dats cap in state or county the we need? 
+ia[ , .N , .(state,county, lake_name, lake_id)]
+all(ia[ , .N , .(state,county, lake_name, lake_id)][,N] == ia[ , .N , .(lake_name, lake_id)][, N]) # all the 
 
+ia[ , .N , .(lake_name, lake_id)]
+
+ia[ , unique(lake_id) , ]
+
+file.choose()
 
 
 
