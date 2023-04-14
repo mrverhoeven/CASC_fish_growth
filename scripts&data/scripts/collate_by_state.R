@@ -54,6 +54,9 @@ cols <- c("state","lake_name", "location_notes.1", #loc dat
 
 
 
+# ar ----------------------------------------------------------------------
+
+
 # Arkansas
 names(ar_reservoir_age_8Oct2021)
 names(ar_reservoir_age2_8Oct2021)
@@ -65,10 +68,16 @@ ar <- merge.data.table(ar_reservoir_age_8Oct2021, ar_reservoir_age2_8Oct2021,  a
 ar[ , summary(.SD) , .SDcols = cols]
 
 
+# ar_location -------------------------------------------------------------
+
+
 #loc dat
 ar[ , .N , .(state,lake_name, location_notes.1)]
 ar[lake_name == "BSL", lake_name := "Bull Shoals Lake"]
 ar[lake_name == "NFL", lake_name := "Norfork Lake"]
+
+
+# ar_date -----------------------------------------------------------------
 
 
 #date dat
@@ -79,6 +88,9 @@ ar[ , summary(date_clean) , ]
 # year
 ar[ , .N , year ]
 ar[is.na(year) & is.na(date_clean), .N , .(lake_name, species.1) ] #there are a few records here for which we have no dates at all. 
+
+
+# ar_species ------------------------------------------------------------------
 
 
 #core fish dat:
@@ -100,8 +112,15 @@ ar[ , species.1 :=
                 V1 , ]
     , ]
 
+# ar_age ------------------------------------------------------------------
+
+
 #age
 ar[ , .N , age ]
+
+
+# ar_length ---------------------------------------------------------------
+
 
 #length
 ar[ , .N , length_unit.1 ]
@@ -141,6 +160,11 @@ setcolorder(ar, c(cols,"date_clean", "aging_method"))
 
 rm(ar_reservoir_age_8Oct2021, ar_reservoir_age2_8Oct2021, ar_rename)
 
+
+
+# ar_geoloc ---------------------------------------------------------------
+
+
 #get lat/long for locs:
 
 ar[ , .N , .(lake_name, location_notes.1) ]
@@ -158,6 +182,9 @@ ar[ , .N , .(lake_name, location_notes.1, latitude, longitude) ]
 
 #IOWA
 
+# ia ----------------------------------------------------------------------
+
+
 ia <- rbindlist(list(rbindlist(list(ia_CCF_age_length_21Aug2021,
                                     ia_BLG_age_length_21Aug2021),
                                fill = TRUE,
@@ -173,7 +200,7 @@ cols <- c("state", "county","lake_name", "lake_id", #loc dat
           "weight.1", "weight_unit.1", "aging_structure", "sex", "aging_data_notes.1", "aging_data_notes.2" #extra useful bits
 )
 setcolorder(ia,c(cols))
-
+ colnames(ia)
 
 
 
@@ -182,9 +209,9 @@ setcolorder(ia,c(cols))
 ia[ , .N , .(state,county, lake_name, lake_id)]
 all(ia[ , .N , .(state,county, lake_name, lake_id)][,N] == ia[ , .N , .(lake_name, lake_id)][, N]) # all the fish by the larger keyset is captured in lake_name.  
 
-#import Iowa loc data
-ia_locs <- fread("E:\\Shared drives\\Hansen Lab\\RESEARCH PROJECTS\\Fish Survey Data\\IA_Data\\ia_raw_disaggregated_data\\samplestationlocationmap_drawrectangletofilterlocations.csv")
+# ia_location -------------------------------------------------------------
 
+str(ia_locs)
 
 #working to resolve ambiguous matches/locs
 ia_locs <- ia_locs[!`First SiteName`== ""]
@@ -243,62 +270,156 @@ ia_locs[str_detect(lake_name, "crawford creek"), lake_name := "crawford creek" ]
 
 ia_locs[str_detect(lake_name, "crawford creek"), ]
 
-
+names(ia_locs)[names(ia_locs)=="state"] <- "state.geoloc"
 
 
 #try merge
-try <- merge(ia, ia_locs, by = c("lake_name", "county"), all.x = T, suffixes = c(".x", ".y"), no.dups = TRUE)
-
-try[!is.na(Longitude), .N]/try[,.N]
-try[is.na(Longitude), .N , .(lake_name, county, lake_id)]
+ia <- merge(ia, ia_locs, by = c("lake_name", "county"), all.x = T, suffixes = c(".x", ".y"), no.dups = TRUE)
 
 
+#percent with sucessful georeferences:
+ia[!is.na(Longitude), .N]/ia[,.N]
+
+# the un referenced/ambiguous LAA samples (n by lake)
+ia[is.na(Longitude), .(n_LAA_obs=.N) , .(lake_name, county, lake_id)]
+
+names(ia) <- tolower(names(ia))
+
+names(ia)
+
+# ia_date -----------------------------------------------------------------
+
+#date data
+ia[, unique(year)]
+
+#backfill year?
+ia[is.na(year) & !is.na(date.1)]
+#date align with year?
+ia[!is.na(date.1) & !year==year(date.1)]
+
+#lost in garbage can? yes there are some month and season data there, 
+ia[is.na(date.1), date.2 := word(garbage_bin_notes.1, -1, sep = ":"), ]
+ia[is.na(date.1), .N , date.2]
+ia[date.2 == "7", date.2 := "July"]
+ia[date.2 == "6", date.2 := "June"]
+ia[date.2 == "8", date.2 := "August"]
+ia[date.2 == "5", date.2 := "May"]
+ia[date.2 == "NA", date.2 := NA  ]
+ia[is.na(date.1)& is.na(date.2), date.2 := word(garbage_bin_notes.3, -1, sep = ":"), ]
+ia[date.2 == "." , date.2 := NA, ]
+ia[ ,date.2 := tolower(date.2) , ]
+
+ia[is.na(date.1), .N , date.2]
+
+ia[, date_clean :=  as.IDate(date.1)]
+
+hist(ia[!is.na(date_clean) ,yday(date_clean)])
+
+#now populate some dates where only mo or season provided (set to 15 if mo give, or season date approximated from histogram here^)
+
+ia_datefill <- transpose(keep.names = "oldname", data.table(fall = "2 Oct",
+                                                          july = "15 July",
+                                                          spring = "20 April",
+                                                          summer = "19 July",
+                                                          june = "15 June",
+                                                          august = "15 August",
+                                                          may = "15 May"))
+ia[ , date.3 := 
+      ia_datefill[match(ia[ ,date.2],ia_datefill[,oldname]) ,
+                V1 , ]
+    , ]
+
+ia[!is.na(year) , date.4 := paste(date.3, year)]
+
+ia[ , .N, date.4]
+
+ia[str_detect(date.4, "NA"), date.4 := NA]
+
+ia[is.na(date_clean) & !is.na(date.4), date_clean := as.IDate(date.4, format = "%d %B %Y") ]
+
+# check coverage
+hist(ia[ ,yday(date_clean)])
+ia[!is.na(date_clean), .N , ]/ia[ , .N , ]
+
+rm(ia_datefill)
+
+
+# ia_species ------------------------------------------------------------------
+ia[ , .N, species.1 ]
+
+#catfish file had no species name in it.
+ia[str_detect(new_file_name, "CCF"), species.1 := "CCF"]
+
+
+ia_rename <- transpose(keep.names = "oldname", data.table(BLC = "black_crappie",
+                                                          LMB = "largemouth_bass",
+                                                          SMB = "smallmouth_bass",
+                                                          sMB = "smallmouth_bass",
+                                                          WAE = "walleye",
+                                                          CCF = "channel_catfish",
+                                                          BLC = "black_crappie",
+                                                          YEP = "yellow_perch",
+                                                          BLG = "bluegill_sunfish",
+                                                          Bluegill = "bluegill_sunfish",
+                                                          NOP = "northern pike"))
+#execute
+ia[ , species.1 := 
+      ia_rename[match(ia[ ,species.1],ia_rename[,oldname]) ,
+                V1 , ]
+    , ]
+
+ia[ , .N ,  species.1]
+ rm(ia_rename)
+
+
+# ia_age ------------------------------------------------------------------
+
+ia[ , hist(age) , ] 
+
+ia[ , .N , age]
+
+ia[is.na(age) , , ]
+ia[age == -1]
+
+ia <- ia[!is.na(age) & age != -1]
+
+ia[ , mean(age) , species.1]
+
+
+
+# ia_length ---------------------------------------------------------------
+
+ia[ , hist(length.1) , ]
+
+ia[ , .N , length_unit.1]
+
+#readme specifies all these remaining length units are inches
+ia[is.na(length_unit.1), length_unit.1 := "inches"]
+
+#rewrite inch lengths to mm, and amends units to reflect this change
+ia[ length_unit.1 == "inches" ,  ':=' (length.1 = length.1 * 25.4, length_unit.1 = "col_name_Total Length (mm)" )   ,  ]
+
+ia[length_unit.1 == "col_name_Total Length (mm)" , length_unit.1 := "milimeters" ]
+ar[ , mean(length.1) , species.1]
+
+ia[species.1 == "walleye" , hist(length.1) , ]
+
+plot(length.1~age, data = ia[species.1=="walleye"])
 
 
 
 
-ia_locs[str_detect( lake_name, "yellow")]
-
-yellow smoke, crawford, 42.023675942780336, -95.32476570431955
-wilson, taylor, 40.83724098351677, -94.54277411857501
-winterfield, sioux, 43.2121169757937, -96.29127739988448
 
 
 
-ia_locs[str_detect(lake_name,"rrowh"), lake_name]
-try[ is.na(Longitude) , .N , .(lake_name,county)]
-try[ is.na(Longitude) , unique(lake_name) , ]
-
-ia[is.na(Longitude), Longitude :=  , ]
-
-
-ia[is.na(county)]
-
-match(ia[ is.na(county),.N, lake_name][,lake_name], ia_locs[ , lake_name, ])
-
-ia_locs[ , lake_name, ]
-
-
-#do the ia lat/long merge into the LAA data: 
-
-ia_locs[ia, on = .(lake_name, county)][!is.na(Latitude) ,.N ,]
-
-ia_locs[ia, on = .(lake_name, county)]
-
-ia[ , length(unique(lake_id)) , .(lake_name, county)][V1>1]
-
-
-ia[ , .N , .(lake_name, lake_id)]
-
-ia[ , unique(lake_id) , ]
-
-file.choose()
-
-ia <- ia[!duplicated(ia[ , .(state, loc, species, age, length) , ]  ) , , ]
-
-
-!duplicated(ia[ , .(state, loc, species, age, length) , ]  )
 
 
 
-#' 
+
+
+
+
+
+
+
+

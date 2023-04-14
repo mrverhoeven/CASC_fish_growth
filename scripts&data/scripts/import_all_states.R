@@ -139,3 +139,13 @@ for(i in 1:n) {
   
 }  
 
+
+
+# import extra files ------------------------------------------------------
+
+
+#import Iowa loc data
+ia_locs <- fread("E:\\Shared drives\\Hansen Lab\\RESEARCH PROJECTS\\Fish Survey Data\\IA_Data\\ia_raw_disaggregated_data\\samplestationlocationmap_drawrectangletofilterlocations.csv")
+
+
+
