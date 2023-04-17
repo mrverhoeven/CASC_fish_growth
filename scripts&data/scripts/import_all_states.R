@@ -34,7 +34,7 @@
 #' 
 #' IN:in_reservoir_age_fish_16Aug2022
 #' 
-#' IL: il_aged_fish_surveys_28Dec2022
+#' IL: il_aged_fish_surveys_28Dec2022, ildnr_effort_and_bio_data_biodata
 #' 
 #' NE: NE_Standard_fish_19Jan2023
 #' 
@@ -53,7 +53,7 @@ list.files(path = "E:/Shared drives/Hansen Lab/RESEARCH PROJECTS/Fish Survey Dat
 sum(str_detect(list.files(path = "E:/Shared drives/Hansen Lab/RESEARCH PROJECTS/Fish Survey Data", 
                           recursive = T , full.names = T, pattern = ".+\\.csv"),
                pattern =
-                 "wi_inland_lenage_19Mar2021|mn_aged_fish_29Sep2021|mn_aged_fish_1_29Sep2021|mn_aged_fish_2_29Sep2021|mi_statustrends_lenage_20May2021|sd_sauger_saugeye_age_growth_03Nov22|sd_length_age_4Oct2021|sd_NOP_age_growth_3Nov2022|ia_age_length_21Aug2021|ia_BLG_age_length_21Aug2021|ia_CCF_age_length_21Aug2021|in_reservoir_age_fish_16Aug2022|il_aged_fish_surveys_28Dec2022|NE_Standard_fish_19Jan2023|KS_Standard_fish_19Jan2023|ON_Standard_fish_19Jan2023|ar_reservoir_age_8Oct2021|ar_reservoir_age2_8Oct2021"  ))
+                 "wi_inland_lenage_19Mar2021|mn_aged_fish_29Sep2021|mn_aged_fish_1_29Sep2021|mn_aged_fish_2_29Sep2021|mi_statustrends_lenage_20May2021|sd_sauger_saugeye_age_growth_03Nov22|sd_length_age_4Oct2021|sd_NOP_age_growth_3Nov2022|ia_age_length_21Aug2021|ia_BLG_age_length_21Aug2021|ia_CCF_age_length_21Aug2021|in_reservoir_age_fish_16Aug2022|in_reservoir_age_effort_16Aug2022|il_aged_fish_surveys_28Dec2022|il_catch_age_effort_17Jan22|NE_Standard_fish_19Jan2023|KS_Standard_fish_19Jan2023|ON_Standard_fish_19Jan2023|ar_reservoir_age_8Oct2021|ar_reservoir_age2_8Oct2021"  ))
 
 #list growth file paths
 growth_files <- list.files(path = "E:/Shared drives/Hansen Lab/RESEARCH PROJECTS/Fish Survey Data", 
@@ -61,7 +61,7 @@ growth_files <- list.files(path = "E:/Shared drives/Hansen Lab/RESEARCH PROJECTS
              str_detect(list.files(path = "E:/Shared drives/Hansen Lab/RESEARCH PROJECTS/Fish Survey Data", 
                           recursive = T , full.names = T, pattern = ".+\\.csv"),
                pattern =
-                 "wi_inland_lenage_19Mar2021|mn_aged_fish_29Sep2021|mn_aged_fish_1_29Sep2021|mn_aged_fish_2_29Sep2021|mi_statustrends_lenage_20May2021|sd_sauger_saugeye_age_growth_03Nov22|sd_length_age_4Oct2021|sd_NOP_age_growth_3Nov2022|ia_age_length_21Aug2021|ia_BLG_age_length_21Aug2021|ia_CCF_age_length_21Aug2021|in_reservoir_age_fish_16Aug2022|il_aged_fish_surveys_28Dec2022|NE_Standard_fish_19Jan2023|KS_Standard_fish_19Jan2023|ON_Standard_fish_19Jan2023|ar_reservoir_age_8Oct2021|ar_reservoir_age2_8Oct2021")]
+                 "wi_inland_lenage_19Mar2021|mn_aged_fish_29Sep2021|mn_aged_fish_1_29Sep2021|mn_aged_fish_2_29Sep2021|mi_statustrends_lenage_20May2021|sd_sauger_saugeye_age_growth_03Nov22|sd_length_age_4Oct2021|sd_NOP_age_growth_3Nov2022|ia_age_length_21Aug2021|ia_BLG_age_length_21Aug2021|ia_CCF_age_length_21Aug2021|in_reservoir_age_fish_16Aug2022|in_reservoir_age_effort_16Aug2022|il_aged_fish_surveys_28Dec2022|il_catch_age_effort_17Jan22|NE_Standard_fish_19Jan2023|KS_Standard_fish_19Jan2023|ON_Standard_fish_19Jan2023|ar_reservoir_age_8Oct2021|ar_reservoir_age2_8Oct2021")]
 
 
 n <- length(growth_files)
@@ -146,6 +146,5 @@ for(i in 1:n) {
 
 #import Iowa loc data
 ia_locs <- fread("E:\\Shared drives\\Hansen Lab\\RESEARCH PROJECTS\\Fish Survey Data\\IA_Data\\ia_raw_disaggregated_data\\samplestationlocationmap_drawrectangletofilterlocations.csv")
-
 
 

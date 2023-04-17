@@ -129,7 +129,7 @@ ar[ , .N , length.1 ]
 #rewrite inch lengths to mm, and amends units to reflect this change
 ar[ length_unit.1 == "col_name_Length_in" ,  ':=' (length.1 = length.1 * 25.4, length_unit.1 = "col_name_Length..mm." )   ,  ]
 
-ar[length_unit.1 == "col_name_Length..mm." , length_unit.1 := "milimeters" ]
+ar[length_unit.1 == "col_name_Length..mm." , length_unit.1 := "millimeters" ]
 ar[ , mean(length.1) , species.1]
 
 
@@ -399,20 +399,190 @@ ia[is.na(length_unit.1), length_unit.1 := "inches"]
 #rewrite inch lengths to mm, and amends units to reflect this change
 ia[ length_unit.1 == "inches" ,  ':=' (length.1 = length.1 * 25.4, length_unit.1 = "col_name_Total Length (mm)" )   ,  ]
 
-ia[length_unit.1 == "col_name_Total Length (mm)" , length_unit.1 := "milimeters" ]
+ia[length_unit.1 == "col_name_Total Length (mm)" , length_unit.1 := "millimeters" ]
 ar[ , mean(length.1) , species.1]
 
 ia[species.1 == "walleye" , hist(length.1) , ]
 
 plot(length.1~age, data = ia[species.1=="walleye"])
 
+rm(ia_age_length_21Aug2021, ia_BLG_age_length_21Aug2021, ia_CCF_age_length_21Aug2021, ia_locs)
+
+
+
+## ILLINOIS
+
+# il ----------------------------------------------------------------------
+
+il_aged_fish_surveys_28Dec2022[ , .N , age ]
+il_catch_age_effort_17Jan22[ , .N , age] # no reason to import these data. 
 
 
 
 
+il <- rbindlist(list(il_aged_fish_surveys_28Dec2022,
+                                    il_catch_age_effort_17Jan22),
+                               fill = TRUE,
+                               use.names = TRUE)
+
+
+il_aged_fish_surveys_28Dec2022[!is.na(age)&
+     !age %in% c("TRUE", "FALSE"), .N, .(state, county, lake_name, lake_id, lat_unspec, lon_unspec) ]
+
+il_catch_age_effort_17Jan22[!is.na(age), .N, .(state, county, lake_name, lake_id, lat_unspec, lon_unspec, age) ]
+
+il[!is.na(age)&!age %in% c("TRUE", "FALSE"), .N, .(state, county, lake_name, lake_id, lat_unspec, lon_unspec) ]
+
+# note bad behavior in the age merge in rbindlist (ages T/F is converted to 1/0 )
+il[!is.na(age), .("meanage" = mean(age), "meanlength"= mean(length.1)) , .(state, county, lake_name, lake_id, lat_unspec, lon_unspec) ]
+
+
+il <- il_aged_fish_surveys_28Dec2022
+
+names(il)
+
+str(il)
+
+
+cols <- c("state", "county","lake_name", "lake_id", "lat_unspec", "lon_unspec",  #loc dat
+          "year","date.1", #date dat
+          "species.1", "age", "length.1", #core fish dat
+          "weight.1", "weight_unit.1", "aging_structure", "survey_id", "reproductive_condition_notes"  #extra useful bits
+)
+setcolorder(il,c(cols))
+
+
+# il_location -------------------------------------------------------------
+
+il[ , .N, .(state, county, lake_name, lake_id, lat_unspec, lon_unspec) ]
+
+il[ ,"latitude" := lat_unspec , ]
+il[ ,"longitude" := lon_unspec , ]
+
+il[ , c("lat_unspec", "lon_unspec") := NULL , ]
+
+names(il)
+
+il[is.na(latitude) | is.na(longitude) , ,]
+
+
+# il_date -----------------------------------------------------------------
+
+il[ , .N , year ]
+
+il[ , str(date.1) , ]
+
+il[ , date.1 := as.IDate(date.1) , ]
+
+il[ , summary(date.1) , ]
+
+il[is.na(date.1), , ]
 
 
 
+# il_species --------------------------------------------------------------
+
+il[ , .N , species.1]
+
+il[ , species.1 := gsub( " ", "_"  , tolower(species.1)) ,]
+
+il[species.1 == "bluegill", species.1 := "bluegill_sunfish"]
+
+il[ , .N , species.1]
+
+
+# il_length ---------------------------------------------------------------
+
+#length units unspecified (not found in Readmes, either), assumed mm based on values
+il[ , hist(length.1) ,  ]
+
+il[ , length_unit.1 := "millimeters" , ]
+
+il[ , mean(length.1), species.1 ] 
+
+il <- il[!is.na(length.1)]
+
+rm(il_aged_fish_surveys_28Dec2022, il_catch_age_effort_17Jan22)
+
+
+# in ----------------------------------------------------------------------
+
+indy <- in_reservoir_age_fish_16Aug2022[!is.na(species.1)]
+
+# indy[in_reservoir_age_effort_16Aug2022 , on = .(survey_id)]
+
+setkey(in_reservoir_age_effort_16Aug2022, survey_id)
+
+in_reservoir_age_effort_16Aug2022[ , .N , survey_id ]
+
+
+#misnumbered survey ID
+indy[survey_id == 373 | survey_id == 273, .N, lake_name]
+indy[lake_name == "Cypress Lake", survey_id := 273 ]
+
+in_reservoir_age_effort_16Aug2022[lake_name == "Brookville", survey_id]
+
+# The following survey ID has no match in th join... based on the funky low N in #478 and the fact the 479 is a survey on Ferdinand State forest from anothe IN file... change survey_id to 478 where 479
+indy[survey_id %in% c(471, 478, 484, 486, 479) , .N , .(survey_id, state, lake_name, survey_id) ]
+indy[survey_id == 479, survey_id := 478 ]
+
+
+
+indy <- merge(indy, in_reservoir_age_effort_16Aug2022, by = "survey_id", all.x = T, all.y =F,  suffixes = c(".laa", ".effort"))
+
+
+any(names(indy) == "year")
+
+
+cols <- c("state.laa", "state.effort", "lake_name.laa", "lake_name.effort", "survey_id",  "lat_unspec", "lon_unspec", #loc dat
+          "date.1", "end_date",  #date dat
+          "species.1", "age", "length.1", "length_unit.1", #core fish dat
+          "weight.1", "weight_unit.1", "aging_structure" #extra useful bits
+)
+setcolorder(indy,c(cols))
+
+# in_loc ------------------------------------------------------------------
+
+indy[ , .N , .(survey_id, state.laa, state.effort, lake_name.laa, lake_name.effort, survey_id,  lat_unspec, lon_unspec) ]
+
+indy[ , c("state.effort", "lake_name.effort") := NULL ]
+
+indy[ , .(number_of_aged_fish = .N) , .(survey_id, state.laa, lake_id, lake_name.laa, survey_id,  lat_unspec, lon_unspec, date.1) ]
+
+
+# in_date -----------------------------------------------------------------
+
+indy[ , date.1 := as.IDate(date.1) , ]
+
+
+# in_species --------------------------------------------------------------
+
+indy[  ,  unique(tolower(species.1)),  ]
+
+indy[ , species.1 := gsub(" ", "_", tolower(species.1))  ,]
+
+indy[ , .N , species.1 ]
+
+indy[ species.1 == "bluegill", species.1 :=  "bluegill_sunfish" ,  ,  ]
+
+
+# in_length ---------------------------------------------------------------
+
+indy[ , unique(length_unit.1) , ]
+
+indy[ , summary(as.numeric(length.1)) , ]
+
+indy[ , l_2 := as.numeric(length.1) , ]
+
+indy[ is.na(l_2) ,  , ] #obviously these lengths are botched
+
+indy[ ,':=' (length.1 = as.numeric(length.1) * 25.4, length_unit.1 = "millimeters" ), ]
+
+indy <- indy[!is.na(length.1)]
+
+indy[ , mean(length.1) , species.1 ]
+
+indy[ , .N , species.1 ]
 
 
 
