@@ -584,12 +584,293 @@ indy[ , mean(length.1) , species.1 ]
 
 indy[ , .N , species.1 ]
 
+rm(in_reservoir_age_effort_16Aug2022, in_reservoir_age_fish_16Aug2022)
 
 
 
+# ks ----------------------------------------------------------------------
+
+ks <- KS_Standard_fish_19Jan2023
+
+names(ks)
+cols <- c("state", "lake_id", #loc dat
+          "date.1", #date dat
+          "species.1", "length.1", "length_unit.1", #core fish dat
+          "weight.1", "weight_unit.1" #extra useful bits
+)
+setcolorder(ks,c(cols))
+colnames(ks)
+
+#no ages!
+
+rm(ks, KS_Standard_fish_19Jan2023)
+
+
+# ne ----------------------------------------------------------------------
+
+ne <- NE_Standard_fish_19Jan2023
+
+names(ne)
+cols <- c("state", "lake_id", #loc dat
+          "date.1", #date dat
+          "species.1", "length.1", "length_unit.1", #core fish dat
+          "weight.1", "weight_unit.1" #extra useful bits
+)
+setcolorder(ne,c(cols))
+colnames(ne)
+
+
+# ne_locs -----------------------------------------------------------------
+
+ne[ , .N , .(lake_id) ]
+
+ne[ , lake_name := word(lake_id, start = 1, end = -3 , sep = fixed('_')) ]
+
+ne[ , .N , .(lake_name, lake_id) ]
+
+#no lat/longs - need better lake keying
+
+
+# ne_date -----------------------------------------------------------------
+
+ne[ , date.1 := as.IDate(date.1) , ]
+
+ne[ , hist(yday(date.1)) , ]
 
 
 
+# ne_species --------------------------------------------------------------
+
+ne[ , .N , species.1 ]
+ne[ , species.1 := gsub(" ", "_", tolower(species.1))]
+
+
+# ne_length ---------------------------------------------------------------
+
+ne[ , hist(length.1) , ]
+
+ne[ , unique(length_unit.1)]
+
+ne[ ,':=' (length.1 = length.1 * 10, length_unit.1 = "millimeters" ), ]
+
+plot(length.1~age, data = ne[species.1=="walleye"])
+
+rm(NE_Standard_fish_19Jan2023)
+
+# on ----------------------------------------------------------------------
+
+on <- ON_Standard_fish_19Jan2023
+
+names(on)
+cols <- c("state", "lake_id", #loc dat
+          "date.1", #date dat
+          "species.1", "length.1", "length_unit.1", #core fish dat
+          "weight.1", "weight_unit.1", "sex", "reproductive_condition_notes" #extra useful bits
+)
+setcolorder(on,c(cols))
+colnames(on)
+
+
+# on_locs -----------------------------------------------------------------
+
+on[ , .N , .(lake_id, state) ]
+
+on[ , lake_name := word(lake_id, start = 1, end = -2 , sep = fixed('_')) ]
+
+on[ , .N , .(lake_name, lake_id, state) ]
+
+#no lat/longs - need better lake keying
+
+
+# on_date -----------------------------------------------------------------
+
+on[ , date.1 := as.IDate(date.1) , ]
+
+on[ , hist(yday(date.1)) , ]
+
+
+
+# on_species --------------------------------------------------------------
+
+on[ , .N , species.1 ]
+on[ , species.1 := gsub(" ", "_", tolower(species.1))]
+
+
+# on_length ---------------------------------------------------------------
+
+on[ , hist(length.1) , ]
+
+on[ , unique(length_unit.1)]
+
+on[ ,':=' (length.1 = length.1 * 10, length_unit.1 = "millimeters" ), ]
+
+plot(length.1~age, data = on[species.1=="walleye"])
+
+rm(ON_Standard_fish_19Jan2023)
+
+
+# mi ----------------------------------------------------------------------
+
+#joining these looks like a bit of a mess
+mi_statustrends_catch_16Mar2021[ ,unique(lake_id) ]
+mi_statustrends_lenage_20May2021[ , unique(lake_id)]
+mi_statustrends_lenage_20May2021[ is.na(lake_id), .N , secondary_lake_id]
+
+
+mi_statustrends_lenage_20May2021[, unique(survey_id)]%in%mi_statustrends_catch_16Mar2021[, unique(survey_id)]
+
+#backfill missing dates:
+mi_statustrends_catch_16Mar2021[ , .N , .(survey_id)]
+
+mi_statustrends_lenage_20May2021[is.na(date.1), survey_id] %in% mi_statustrends_catch_16Mar2021[ , survey_id , ]
+
+mi_statustrends_catch_16Mar2021[survey_id %in% mi_statustrends_lenage_20May2021[is.na(date.1), survey_id], .N ,  .(survey_id, date.1)]
+
+mi_statustrends_lenage_20May2021[is.na(date.1), .N , .(survey_id)]  
+
+mi_statustrends_lenage_20May2021[is.na(date.1), ]  
+
+match(mi_statustrends_lenage_20May2021[is.na(date.1), survey_id], mi_statustrends_catch_16Mar2021[ , survey_id]) 
+
+mi_statustrends_lenage_20May2021[is.na(date.1), date.1:= mi_statustrends_catch_16Mar2021[
+                                   match(mi_statustrends_lenage_20May2021[is.na(date.1), survey_id], mi_statustrends_catch_16Mar2021[ , survey_id]), date.1 , ]]
+
+# now join first on survey_id then on secondary_id or lake_id
+mi_statustrends_lenage_20May2021[!survey_id %in% mi_statustrends_catch_16Mar2021[ ,survey_id], .N , .(survey_id, lake_id, secondary_lake_id) ]#welp - -cant use lake_id...or secondary_id
+
+mi_statustrends_lenage_20May2021[!survey_id %in% mi_statustrends_catch_16Mar2021[ ,survey_id], .N , .(survey_id, lake_id, secondary_lake_id) ]
+
+mi_statustrends_catch_16Mar2021[ , .N,.(survey_id, lake_id, lake_name, county, lat_unspec, lon_unspec) ]
+
+mi <- merge(mi_statustrends_lenage_20May2021, 
+            mi_statustrends_catch_16Mar2021[ , .N,.(survey_id, lake_id, lake_name, county, lat_unspec, lon_unspec)][ , N := NULL]
+            , by = c("survey_id", "lake_id"), all.x = T)
+
+colnames(mi)
+cols <- c("state", "county", "lake_name", "lake_id", "secondary_lake_id", "lon_unspec", "lat_unspec",  #loc dat
+          "date.1", #date dat
+          "species.1", "length.1", "length_unit.1", #core fish dat
+          "aging_structure" #extra useful bits
+)
+setcolorder(mi,c(cols))
+colnames(mi)
+
+# mi_locs -----------------------------------------------------------------
+
+mi[ , .N , is.na(lat_unspec) ]
+
+mi[ , summary(lat_unspec) , ]
+mi[ , summary(lon_unspec) , ]
+
+names(mi)[names(mi)== "lat_unspec"] <- "latitude"
+names(mi)[names(mi)== "lon_unspec"] <- "longitude"
+
+# theres 11k + surveys without any lake data...
+
+
+# mi_date -----------------------------------------------------------------
+
+mi[ , unique(date.1) , ]
+
+mi[ str_detect(date.1, "SAMPLE"), date.temporary :=  as.IDate(word(date.1, -1, sep = ":"), format = "%m/%d/%Y") , ]
+mi[ str_detect(date.1, "SAMPLE", negate = T), date.temporary := as.IDate(date.1, format = "%d-%B-%y")]
+
+mi[ , .N  , is.na(date.temporary) ]
+
+mi[ , date.1 := date.temporary , ]
+mi[ , date.temporary := NULL]
+
+mi[ , hist(yday(date.1))]
+
+
+# mi_species --------------------------------------------------------------
+
+mi[ , .N , species.1 ]
+
+#renaming table (from metadata in GDrive)
+mi_rename <- transpose(keep.names = "oldname", data.table(ATS	= "atlantic salmon",
+                                                          BCR =	"black crappie",
+                                                          BKT = "brook trout",
+                                                          BLG =	"Bluegill sunfish",
+                                                          BLP	= "see ambiguous code",
+                                                          BLR	= "Black Redhorse",
+                                                          BNT	= "Brown Trout",
+                                                          BRB	= "Brown Bullhead",
+                                                          CAR	= "common carp",
+                                                          CCF	= "channel catfish",
+                                                          CIS	= "Cisco",
+                                                          COS	= "Coho Salmon",
+                                                          CRA	= "see ambiguous code",
+                                                          CWS	= "see ambiguous code",
+                                                          FCF	= "see ambiguous code",
+                                                          GOS	= "Golden Shiner",
+                                                          GRP	= "Grass Pickerel",
+                                                          GSF	= "see ambiguous code",
+                                                          HSF	= "see ambiguous code",
+                                                          LAT	= "Lake Trout",
+                                                          LMB	= "Largemouth Bass",
+                                                          LNG	= "Longnose Gar",
+                                                          LSF	= "longear sunfish",
+                                                          LWF	= "Lake Whitefish",
+                                                          MUS = "Muskellunge",
+                                                          NOP	= "Northern Pike",
+                                                          PSF	= "see ambiguous code",
+                                                          RBT	= "Rainbow Trout",
+                                                          RKB	= "Rock Bass",
+                                                          RSF	= "see ambiguous code",
+                                                          SMB	= "Smallmouth Bass",
+                                                          SMT	= "see ambiguous code",
+                                                          SPL	= "see ambiguous code",
+                                                          STN	= "Sturgeon",
+                                                          TMU	= "see ambiguous code",
+                                                          WAE	= "Walleye",
+                                                          WCR	= "White Crappie",
+                                                          WHB	= "White Bass",
+                                                          WHP	= "White Perch",
+                                                          YEP	= "Yellow Perch"
+                                                          ))
+#execute
+mi[ , species_code := species.1]
+mi[ , species.1 := 
+      gsub(" ", "_", tolower(mi_rename[match(mi[ ,species.1],mi_rename[,oldname]) ,
+                V1 , ]))
+    , ]
+
+mi[ , .N , .(species.1, species_code)][order(-N)]
+
+
+# mi_length ---------------------------------------------------------------
+
+mi[ , summary(length.1) , ]
+mi[ , .N , length_unit.1]
+
+mi[ ,':=' (length.1 = length.1 * 25.4, length_unit.1 = "millimeters" ), ]
+
+plot(length.1~age, data = mi[species.1=="walleye"])
+
+mi[ , mean(length.1) , species.1 ]
+
+rm(mi_rename, mi_statustrends_catch_16Mar2021, mi_statustrends_lenage_20May2021)
+
+# mn ----------------------------------------------------------------------
+
+mn <- rbindlist(list(rbindlist(list(mn_aged_fish_1_29Sep2021,
+                                    mn_aged_fish_2_29Sep2021),
+                               fill = TRUE,
+                               use.names = TRUE),
+                     mn_aged_fish_29Sep2021),
+                fill = TRUE,
+                use.names = TRUE)
+
+
+colnames(mn)
+cols <- c("state", "county", "lake_name", "lake_id", "survey_id", "sample_id.1", "site_id.1" ,  #loc dat
+          "date.1", #date dat
+          "species.1", "age", "length.1", "length_unit.1", "species.2", "length.2", "length_unit.2" ,  #core fish dat
+          "aging_structure", "sex", "weight.1", "weight_unit.1", "weight.2", "weight_unit.2", "aging_data_notes.1", "aging_data_notes.2", "aging_data_notes.3", "aging_data_notes.4", "aging_data_notes.5", "young_of_year"  #extra useful bits
+)
+setcolorder(mn,c(cols))
+colnames(mn)
 
 
 
