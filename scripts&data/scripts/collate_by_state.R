@@ -478,6 +478,7 @@ il[ , summary(date.1) , ]
 
 il[is.na(date.1), , ]
 
+il[, date_clean :=  date.1]
 
 
 # il_species --------------------------------------------------------------
@@ -553,6 +554,8 @@ indy[ , .(number_of_aged_fish = .N) , .(survey_id, state.laa, lake_id, lake_name
 # in_date -----------------------------------------------------------------
 
 indy[ , date.1 := as.IDate(date.1) , ]
+
+indy[, date_clean :=  date.1]
 
 
 # in_species --------------------------------------------------------------
@@ -637,6 +640,8 @@ ne[ , date.1 := as.IDate(date.1) , ]
 
 ne[ , hist(yday(date.1)) , ]
 
+ne[, date_clean :=  date.1]
+
 
 
 # ne_species --------------------------------------------------------------
@@ -687,6 +692,8 @@ on[ , .N , .(lake_name, lake_id, state) ]
 on[ , date.1 := as.IDate(date.1) , ]
 
 on[ , hist(yday(date.1)) , ]
+
+on[, date_clean :=  date.1]
 
 
 
@@ -782,6 +789,8 @@ mi[ , date.temporary := NULL]
 
 mi[ , hist(yday(date.1))]
 
+mi[, date_clean :=  date.1]
+
 
 # mi_species --------------------------------------------------------------
 
@@ -854,23 +863,202 @@ rm(mi_rename, mi_statustrends_catch_16Mar2021, mi_statustrends_lenage_20May2021)
 
 # mn ----------------------------------------------------------------------
 
-mn <- rbindlist(list(rbindlist(list(mn_aged_fish_1_29Sep2021,
-                                    mn_aged_fish_2_29Sep2021),
-                               fill = TRUE,
-                               use.names = TRUE),
-                     mn_aged_fish_29Sep2021),
-                fill = TRUE,
-                use.names = TRUE)
+mn <- mn_aged_fish_v2_20apr2023
 
 
 colnames(mn)
-cols <- c("state", "county", "lake_name", "lake_id", "survey_id", "sample_id.1", "site_id.1" ,  #loc dat
-          "date.1", #date dat
-          "species.1", "age", "length.1", "length_unit.1", "species.2", "length.2", "length_unit.2" ,  #core fish dat
-          "aging_structure", "sex", "weight.1", "weight_unit.1", "weight.2", "weight_unit.2", "aging_data_notes.1", "aging_data_notes.2", "aging_data_notes.3", "aging_data_notes.4", "aging_data_notes.5", "young_of_year"  #extra useful bits
+cols <- c("state", "county", "lake_name", "lake_id", "survey_id", "site_id.1" ,  #loc dat
+          "date.1", "date.2", #date dat
+          "species.1", "age", "length.1", "length_unit.1", "species.2", #core fish dat
+          "aging_structure", "sex", "weight.1", "weight_unit.1",  "young_of_year"  #extra useful bits
 )
 setcolorder(mn,c(cols))
 colnames(mn)
+
+mn[ ,.N , age]
+
+# mn_location ------------------------------------------------------------------
+
+mn[, .N , lake_id ][order(lake_id)]
+
+mn[ , DOW := as.integer(lake_id) , ]
+mn_locs[, unique(DOW)]
+
+mn <- merge(mn, mn_locs[ ,.(FISHERIES_WATERBODY_ID, LAKE_NAME, ALT_LAKE_NAME, DOW, DOW_NBR_PRIMARY, DOW_SUB_BASIN_NBR_PRIMARY, LAKE_CENTER_LAT_DD5, LAKE_CENTER_LONG_DD5) ,], by = "DOW", all.x = T)
+
+mn[ ,"latitude" := LAKE_CENTER_LAT_DD5 , ]
+mn[ ,"longitude" := LAKE_CENTER_LONG_DD5 , ]
+
+mn[ , c("LAKE_CENTER_LAT_DD5", "LAKE_CENTER_LONG_DD5") := NULL , ]
+
+mn[ , .N , .(DOW, latitude, longitude) ]
+mn[ , .N , .(DOW_SUB_BASIN_NBR_PRIMARY) ]
+
+mn[ , c("FISHERIES_WATERBODY_ID", "LAKE_NAME", "ALT_LAKE_NAME", "DOW", "DOW_NBR_PRIMARY", "DOW_SUB_BASIN_NBR_PRIMARY") := NULL  ,  ]
+
+names(mn)
+
+
+# mn_date -----------------------------------------------------------------
+
+mn[ , .N , .(date.1, date.2) ]
+
+mn[ , unique(date.1) ,]
+
+mn[ , date.1 := as.IDate(date.1, format = "%m/%d/%Y") ,]
+mn[ , date.2 := as.IDate(date.2, format = "%m/%d/%Y") ,]
+
+#date 1 was called sample_date, and date two was called SRVY_DT. 
+mn[ !(date.1 == date.2), summary(date.1 - date.2) ]
+mn[ !(date.1 == date.2), hist(date.1 - date.2) ]
+
+# we will use "sample date"
+mn[, date_clean :=  as.IDate(date.1)]
+
+mn[ , hist(yday(date_clean))]
+
+# mn_species --------------------------------------------------------------
+
+mn[ , .N , .(species.1, species.2)][ order(-species.1)]
+
+mn[ , species.1 := gsub(" ", "_", tolower(species.1)) ]
+
+mn[ species.1 == "bluegill", species.1 := "bluegill_sunfish"]
+
+
+# mn_length ---------------------------------------------------------------
+
+mn[ , hist(length.1) , ]
+mn[ , unique(length_unit.1) , ]
+
+mn[length_unit.1 == "col_name_LEN_MM", length_unit.1 := "millimeters"]
+
+
+mn[ ,max(length.1), species.1][ order(species.1)]
+
+rm(mn_aged_fish_v2_20apr2023, mn_locs)
+
+
+# wi ----------------------------------------------------------------------
+
+
+wi <- wi_inland_lenage_19Mar2021
+
+
+colnames(wi)
+cols <- c("state", "county", "lake_name", "lake_id", "survey_id",  #loc dat
+          "date.1", #date dat
+          "species.1", "age", "length.1", "length_unit.1", #core fish dat
+          "aging_structure", "sex", "weight.1", "weight_unit.1" #extra useful bits
+)
+setcolorder(wi,c(cols))
+colnames(wi)
+
+wi[ ,.N , age]
+
+
+# wi_locs -----------------------------------------------------------------
+
+wi[ , .N , .(state, county, lake_name, lake_id) ]
+
+colnames(wi_locs)[colnames(wi_locs)=="lake.id"] <- "lake_id"
+
+wi <- merge(wi, wi_locs, by = "lake_id", all.x = T)
+
+names(wi)
+
+wi[ ,"latitude" := lat , ]
+wi[ ,"longitude" := long , ]
+
+wi[ , c("lat", "long", "state.y") := NULL , ]
+
+colnames(wi)[colnames(wi)=="state.x"] <- "state"
+
+wi[ , .N , .(state, county, lake_name, lake_id, latitude, longitude) ]
+
+wi[ is.na(latitude), .N , .(county, lake_name, lake_id) ]
+
+#manual locs for some of those:
+wi[ is.na(latitude) & lake_id == 261100  , `:=`(latitude = 44.34026959720516, longitude = -89.15008499972733) ,]#chain_o'_lakes
+wi[ is.na(latitude) & lake_id == 299000  , `:=`(latitude = 44.686273697662806, longitude = -88.6610130587461) ,]#cloverleaf_chain
+wi[ is.na(latitude) & lake_id == 339800  , `:=`(latitude = 44.90509784350446, longitude = -88.55579995050842) ,]#legend_lake  
+wi[ is.na(latitude) & lake_id == 455500  , `:=`(latitude = 45.07430035317849, longitude = -88.25180404816608) ,]#ucil_lake  
+wi[ is.na(latitude) & lake_id == 755500  , `:=`(latitude = 42.77098798220831, longitude = -88.56316236838366) ,]#lauderdale_lakes
+wi[ is.na(latitude) & lake_id == 2267600 , `:=`(latitude = 45.902013035820694, longitude = -90.06703957294965) ,]#pike_lake_chain 
+
+
+
+# wi_date -----------------------------------------------------------------
+
+#this was called "sample_date" and there are some major issues in here
+wi[ , date.1 := as.IDate(date.1) , ]
+
+#these two dates sets were called "survey_date" (start and end)
+wi[ , date.2 := word(garbage_bin_notes.2, -1, sep = ":") ,]
+wi[ , date.3 := word(garbage_bin_notes.3, -1, sep = ":") ,]
+
+wi[ , date.2 := as.IDate(date.2)]
+wi[ , date.3 := as.IDate(date.3)]
+
+wi[ , summary(date.2 - date.3) ,]
+
+wi[ , sort(unique(year(date.1))) ,]
+wi[ , sort(unique(year(date.2))) ,]
+wi[ , sort(unique(year(date.3))) ,]
+
+wi[ !(year(date.1) == year(date.2)) , sort(unique(year(date.1)))]
+
+wi[ !(year(date.1) == year(date.2)) , .(date.1, date.2)]
+
+#for about 8% of the data the date.1 seems super wonky
+wi[ abs(date.1 - date.2) > 30, .(date.1, date.2)]
+
+#we're going to use the survey dates
+wi[ , date_clean := date.2 , ]
+
+wi[ , hist(yday(date_clean)) , ]
+
+
+# wi_species --------------------------------------------------------------
+
+wi[ , .N , species.1 ]
+
+wi[species.1 == "bluegill", species.1 := "bluegill_sunfish"  , ]
+
+
+
+# wi_age ------------------------------------------------------------------
+
+wi[ , .N , age ]
+
+
+# wi_length ---------------------------------------------------------------
+
+wi[ , summary(length.1)]
+
+wi[ , .N ,  length_unit.1]
+
+wi[ ,':=' (length.1 = as.numeric(length.1) * 25.4, length_unit.1 = "millimeters" ), ]
+
+plot(length.1~age, data = wi[species.1=="walleye"])
+
+#how many missing critical data? 35%
+wi[is.na(age) | is.na(length.1), .N]/ wi[ , .N , ]
+
+wi <- wi[!(is.na(age) | is.na(length.1))]
+
+rm(wi_locs, wi_inland_lenage_19Mar2021)
+
+# sd ----------------------------------------------------------------------
+
+
+ia <- rbindlist(list(rbindlist(list(ia_CCF_age_length_21Aug2021,
+                                    ia_BLG_age_length_21Aug2021),
+                               fill = TRUE,
+                               use.names = TRUE),
+                     ia_age_length_21Aug2021),
+                fill = TRUE,
+                use.names = TRUE)
 
 
 
