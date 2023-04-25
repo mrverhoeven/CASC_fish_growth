@@ -89,6 +89,10 @@ ar[ , summary(date_clean) , ]
 ar[ , .N , year ]
 ar[is.na(year) & is.na(date_clean), .N , .(lake_name, species.1) ] #there are a few records here for which we have no dates at all. 
 
+# make other dates character strings
+datecols <- colnames(ar)[str_detect(colnames(ar), "date\\.")]
+ar[    , (datecols) := lapply(.SD, as.character)    ,   .SDcols = datecols]
+
 
 # ar_species ------------------------------------------------------------------
 
@@ -178,6 +182,14 @@ ar[ location_notes.1 == "Location:Long Creek Arm" , ':=' (latitude = "36.4823127
 ar[ location_notes.1 == "Location:Upper White River Arm" , ':=' (latitude = "36.52369836589746" , longitude = "-93.72775995312399")   , ]
 
 ar[ , .N , .(lake_name, location_notes.1, latitude, longitude) ]
+
+
+colnames(ar)
+
+
+
+
+
 
 
 #IOWA
@@ -311,6 +323,8 @@ ia[ ,date.2 := tolower(date.2) , ]
 
 ia[is.na(date.1), .N , date.2]
 
+ia[ , date.1 :=  as.IDate(date.1) , ]
+
 ia[, date_clean :=  as.IDate(date.1)]
 
 hist(ia[!is.na(date_clean) ,yday(date_clean)])
@@ -342,6 +356,10 @@ hist(ia[ ,yday(date_clean)])
 ia[!is.na(date_clean), .N , ]/ia[ , .N , ]
 
 rm(ia_datefill)
+
+# make other dates character strings
+datecols <- colnames(ia)[str_detect(colnames(ia), "date\\.")]
+ia[    , (datecols) := lapply(.SD, as.character)    ,   .SDcols = datecols]
 
 
 # ia_species ------------------------------------------------------------------
@@ -407,6 +425,14 @@ ia[species.1 == "walleye" , hist(length.1) , ]
 plot(length.1~age, data = ia[species.1=="walleye"])
 
 rm(ia_age_length_21Aug2021, ia_BLG_age_length_21Aug2021, ia_CCF_age_length_21Aug2021, ia_locs)
+
+
+
+colnames(ia)
+
+ia[, c("state.geoloc") := NULL, ]
+
+
 
 
 
@@ -480,6 +506,10 @@ il[is.na(date.1), , ]
 
 il[, date_clean :=  date.1]
 
+# make other dates character strings
+datecols <- colnames(il)[str_detect(colnames(il), "date\\.")]
+il[    , (datecols) := lapply(.SD, as.character)    ,   .SDcols = datecols]
+
 
 # il_species --------------------------------------------------------------
 
@@ -513,6 +543,18 @@ il[ , mean(length.1), species.1 ]
 # il <- il[!is.na(length.1)]
 
 rm(il_aged_fish_surveys_28Dec2022, il_catch_age_effort_17Jan22)
+
+
+colnames(il)
+
+
+
+
+
+
+
+
+
 
 
 # in ----------------------------------------------------------------------
@@ -576,6 +618,10 @@ indy[ , date.1 := as.IDate(date.1) , ]
 
 indy[, date_clean :=  date.1]
 
+# make other dates character strings
+datecols <- colnames(indy)[str_detect(colnames(indy), "date\\.")]
+indy[    , (datecols) := lapply(.SD, as.character)    ,   .SDcols = datecols]
+
 
 # in_species --------------------------------------------------------------
 
@@ -613,7 +659,11 @@ indy[ , .N , species.1 ]
 
 rm(in_reservoir_age_effort_16Aug2022, in_reservoir_age_fish_16Aug2022)
 
+colnames(indy)
 
+colnames(indy) <-  gsub("\\.laa", "", colnames(indy))
+
+indy[ , c("l_2") := NULL ,]
 
 # ks ----------------------------------------------------------------------
 
@@ -666,6 +716,9 @@ ne[ , hist(yday(date.1)) , ]
 
 ne[, date_clean :=  date.1]
 
+# make other dates character strings
+datecols <- colnames(ne)[str_detect(colnames(ne), "date\\.")]
+ne[    , (datecols) := lapply(.SD, as.character)    ,   .SDcols = datecols]
 
 
 # ne_species --------------------------------------------------------------
@@ -690,6 +743,10 @@ ne[ ,':=' (length.1 = length.1 * 10, length_unit.1 = "millimeters" ), ]
 plot(length.1~age, data = ne[species.1=="walleye"])
 
 rm(NE_Standard_fish_19Jan2023)
+
+colnames(ne)
+
+
 
 # on ----------------------------------------------------------------------
 
@@ -724,6 +781,9 @@ on[ , hist(yday(date.1)) , ]
 
 on[, date_clean :=  date.1]
 
+# make other dates character strings
+datecols <- colnames(on)[str_detect(colnames(on), "date\\.")]
+on[    , (datecols) := lapply(.SD, as.character)    ,   .SDcols = datecols]
 
 
 # on_species --------------------------------------------------------------
@@ -748,6 +808,8 @@ on[ ,':=' (length.1 = length.1 * 10, length_unit.1 = "millimeters" ), ]
 plot(length.1~age, data = on[species.1=="walleye"])
 
 rm(ON_Standard_fish_19Jan2023)
+
+colnames(on)
 
 
 # mi ----------------------------------------------------------------------
@@ -825,6 +887,10 @@ mi[ , hist(yday(date.1))]
 
 mi[, date_clean :=  date.1]
 
+# make other dates character strings
+datecols <- colnames(mi)[str_detect(colnames(mi), "date\\.")]
+mi[    , (datecols) := lapply(.SD, as.character)    ,   .SDcols = datecols]
+
 
 # mi_species --------------------------------------------------------------
 
@@ -900,6 +966,10 @@ mi[ , mean(length.1) , species.1 ]
 
 rm(mi_rename, mi_statustrends_catch_16Mar2021, mi_statustrends_lenage_20May2021)
 
+colnames(mi)
+
+
+
 # mn ----------------------------------------------------------------------
 
 mn <- mn_aged_fish_v2_20apr2023
@@ -937,6 +1007,8 @@ mn[ , c("FISHERIES_WATERBODY_ID", "LAKE_NAME", "ALT_LAKE_NAME", "DOW", "DOW_NBR_
 
 names(mn)
 
+mn[ , survey_id := as.character(survey_id)]
+
 
 # mn_date -----------------------------------------------------------------
 
@@ -955,6 +1027,10 @@ mn[ !(date.1 == date.2), hist(date.1 - date.2) ]
 mn[, date_clean :=  as.IDate(date.1)]
 
 mn[ , hist(yday(date_clean))]
+
+# make other dates character strings
+datecols <- colnames(mn)[str_detect(colnames(mn), "date\\.")]
+mn[    , (datecols) := lapply(.SD, as.character)    ,   .SDcols = datecols]
 
 # mn_species --------------------------------------------------------------
 
@@ -981,6 +1057,8 @@ mn[length_unit.1 == "col_name_LEN_MM", length_unit.1 := "millimeters"]
 mn[ ,max(length.1), species.1][ order(species.1)]
 
 rm(mn_aged_fish_v2_20apr2023, mn_locs)
+
+colnames(mn)
 
 
 # wi ----------------------------------------------------------------------
@@ -1062,6 +1140,10 @@ wi[ , date_clean := date.2 , ]
 
 wi[ , hist(yday(date_clean)) , ]
 
+# make other dates character strings
+datecols <- colnames(wi)[str_detect(colnames(wi), "date\\.")]
+wi[    , (datecols) := lapply(.SD, as.character)    ,   .SDcols = datecols]
+
 
 # wi_species --------------------------------------------------------------
 
@@ -1094,6 +1176,9 @@ wi[is.na(age) | is.na(length.1), .N]/ wi[ , .N , ]
 wi <- wi[!(is.na(age) | is.na(length.1))]
 
 rm(wi_locs, wi_inland_lenage_19Mar2021)
+
+
+colnames(wi)
 
 # sd ----------------------------------------------------------------------
 
@@ -1205,6 +1290,10 @@ sd[ , hist(yday(date_clean)) ,]
 
 colnames(sd)[colnames(sd)=="SurveyDate"] <- "date.2"
 
+# make other dates character strings
+datecols <- colnames(sd)[str_detect(colnames(sd), "date\\.")]
+sd[    , (datecols) := lapply(.SD, as.character)    ,   .SDcols = datecols]
+
 
 
 # sd_species --------------------------------------------------------------
@@ -1237,6 +1326,7 @@ plot(length.1~age, data = sd[species.1=="walleye"])
 
 rm(sd_length_age_4Oct2021, sd_locs, sd_srvys, sd_NOP_age_growth_3Nov2022, sd_sauger_saugeye_age_growth_03Nov22)
 
+colnames(sd)
 
 
 # merge all files ---------------------------------------------------------
@@ -1247,27 +1337,27 @@ cols <- c("state", "latitude", "longitude", #loc dat
           "species.1", "age", "length.1", "length_unit.1" #core fish dat
           )
 
-ar[ , .SD , .SDcols = cols]
-ia[ , .SD , .SDcols = cols]
-il[ , .SD , .SDcols = cols]
-indy[ , .SD , .SDcols = cols]
-mi[ , .SD , .SDcols = cols]
-mn[ , .SD , .SDcols = cols]
-# on[ , .SD , .SDcols = cols] # no lat/longs
-# ne[ , .SD , .SDcols = cols] #no ages
-sd[ , .SD , .SDcols = cols]
-wi[ , .SD , .SDcols = cols]
-
-laa <-rbindlist(list(ar[ , .SD , .SDcols = cols],
-                                     ia[ , .SD , .SDcols = cols],
-                                     il[ , .SD , .SDcols = cols],
-                                     indy[ , .SD , .SDcols = cols],
-                                     mi[ , .SD , .SDcols = cols],
-                                     mn[ , .SD , .SDcols = cols],
-                                     sd[ , .SD , .SDcols = cols],
-                                     wi[ , .SD , .SDcols = cols]),
-                               fill = TRUE,
-                               use.names = TRUE)
+# ar[ , .SD , .SDcols = cols]
+# ia[ , .SD , .SDcols = cols]
+# il[ , .SD , .SDcols = cols]
+# indy[ , .SD , .SDcols = cols]
+# mi[ , .SD , .SDcols = cols]
+# mn[ , .SD , .SDcols = cols]
+# # on[ , .SD , .SDcols = cols] # no lat/longs
+# # ne[ , .SD , .SDcols = cols] #no ages
+# sd[ , .SD , .SDcols = cols]
+# wi[ , .SD , .SDcols = cols]
+# 
+# laa <-rbindlist(list(ar[ , .SD , .SDcols = cols],
+#                                      ia[ , .SD , .SDcols = cols],
+#                                      il[ , .SD , .SDcols = cols],
+#                                      indy[ , .SD , .SDcols = cols],
+#                                      mi[ , .SD , .SDcols = cols],
+#                                      mn[ , .SD , .SDcols = cols],
+#                                      sd[ , .SD , .SDcols = cols],
+#                                      wi[ , .SD , .SDcols = cols]),
+#                                fill = TRUE,
+#                                use.names = TRUE)
 
 laa <-rbindlist(list(ar,
                      ia,
@@ -1276,12 +1366,22 @@ laa <-rbindlist(list(ar,
                      mi,
                      mn,
                      sd,
+                     on,
                      wi),
                 fill = TRUE,
                 use.names = TRUE)
 
+sort(colnames(laa))
 
-# fwrite(laa, file = "C:\\Users\\verh0064\\Desktop\\laa_merged.csv")
+cols <- c("state", "county","lake_name", "lake_id", "secondary_lake_id", "site_id.1", "latitude", "longitude",   #loc dat
+          "year","date_clean", "survey_id", #date dat
+          "species.1", "age", "length.1", "length_unit.1", "sample_id.1" , "sample_id.2",  #core fish dat
+          "backcalculated_age",  "weight.1", "weight_unit.1", "aging_structure", "aging_method", "sex", "aging_data_notes.1", "aging_data_notes.2", "young_of_year", "reproductive_condition_notes"   #extra useful bits
+)
+setcolorder(laa,c(cols))
+colnames(laa)
+
+# fwrite(laa[ , 1:42 ,], file = "C:\\Users\\verh0064\\Desktop\\laa_merged.csv")
 
 laa[ !is.na(length.1)& !is.na(age) & !is.na(latitude), .(.N, max(latitude), min(latitude)) , species.1 ][order(-N)]
 
