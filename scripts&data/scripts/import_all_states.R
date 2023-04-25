@@ -109,6 +109,7 @@ for(i in 1:n) {
   
   print(nobs)
   
+  rm(unusedbits, names)
 }  
 
 
@@ -122,8 +123,10 @@ ia_locs <- fread("E:\\Shared drives\\Hansen Lab\\RESEARCH PROJECTS\\Fish Survey 
 #import MN loc data
 mn_locs <- fread("E:\\Shared drives\\Hansen Lab\\RESEARCH PROJECTS\\Fish Survey Data\\MN_Data\\mn_lake_list.csv")
 
-
 #import WI loc data
 wi_locs <- fread("E:\\Shared drives\\Hansen Lab\\RESEARCH PROJECTS\\Fish Survey Data\\WI_Data\\wi_lake_wbic_lat_long_PNF.csv")
 
+#import SD loc data
+sd_srvys <- fread("E:\\Shared drives\\Hansen Lab\\RESEARCH PROJECTS\\Fish Survey Data\\SD_Data\\sd_raw_disaggregated_data\\sd_effort_4Oct2021.csv")
+sd_locs <- fread("E:\\Shared drives\\Hansen Lab\\RESEARCH PROJECTS\\Fish Survey Data\\SD_Data\\ManagedFisheries.csv")
 
