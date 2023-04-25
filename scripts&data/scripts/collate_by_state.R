@@ -35,7 +35,7 @@ latlong2county <- function(pointsDF) {
 }
 
 # Test the function using points in Wisconsin and Oregon.
-testPoints <- data.frame(x = c(-90, -120), y = c(44, 44))
+# testPoints <- data.frame(x = c(-90, -120), y = c(44, 44))
 
 
 
@@ -361,7 +361,7 @@ ia_rename <- transpose(keep.names = "oldname", data.table(BLC = "black_crappie",
                                                           YEP = "yellow_perch",
                                                           BLG = "bluegill_sunfish",
                                                           Bluegill = "bluegill_sunfish",
-                                                          NOP = "northern pike"))
+                                                          NOP = "northern_pike"))
 #execute
 ia[ , species.1 := 
       ia_rename[match(ia[ ,species.1],ia_rename[,oldname]) ,
@@ -492,6 +492,15 @@ il[species.1 == "bluegill", species.1 := "bluegill_sunfish"]
 il[ , .N , species.1]
 
 
+# il_age ------------------------------------------------------------------
+
+il[ , hist(age) , ]
+
+colnames(il)
+
+
+
+
 # il_length ---------------------------------------------------------------
 
 #length units unspecified (not found in Readmes, either), assumed mm based on values
@@ -501,7 +510,7 @@ il[ , length_unit.1 := "millimeters" , ]
 
 il[ , mean(length.1), species.1 ] 
 
-il <- il[!is.na(length.1)]
+# il <- il[!is.na(length.1)]
 
 rm(il_aged_fish_surveys_28Dec2022, il_catch_age_effort_17Jan22)
 
@@ -550,6 +559,16 @@ indy[ , c("state.effort", "lake_name.effort") := NULL ]
 
 indy[ , .(number_of_aged_fish = .N) , .(survey_id, state.laa, lake_id, lake_name.laa, survey_id,  lat_unspec, lon_unspec, date.1) ]
 
+indy[ ,"latitude" := lat_unspec , ]
+indy[ ,"longitude" := lon_unspec , ]
+
+indy[ , c("lat_unspec", "lon_unspec") := NULL , ]
+
+indy[ ,"state" := state.laa , ]
+
+indy[ , .N , state ]
+
+indy[ , c("state.laa") := NULL , ]
 
 # in_date -----------------------------------------------------------------
 
@@ -567,6 +586,11 @@ indy[ , species.1 := gsub(" ", "_", tolower(species.1))  ,]
 indy[ , .N , species.1 ]
 
 indy[ species.1 == "bluegill", species.1 :=  "bluegill_sunfish" ,  ,  ]
+
+
+# in_age ------------------------------------------------------------------
+
+indy[ , .N , age]
 
 
 # in_length ---------------------------------------------------------------
@@ -650,6 +674,11 @@ ne[ , .N , species.1 ]
 ne[ , species.1 := gsub(" ", "_", tolower(species.1))]
 
 
+# ne_age ------------------------------------------------------------------
+
+ne[ ,.N, age]
+
+
 # ne_length ---------------------------------------------------------------
 
 ne[ , hist(length.1) , ]
@@ -701,6 +730,11 @@ on[, date_clean :=  date.1]
 
 on[ , .N , species.1 ]
 on[ , species.1 := gsub(" ", "_", tolower(species.1))]
+
+
+# on_age ------------------------------------------------------------------
+
+on[ , .N , age]
 
 
 # on_length ---------------------------------------------------------------
@@ -848,6 +882,11 @@ mi[ , species.1 :=
 mi[ , .N , .(species.1, species_code)][order(-N)]
 
 
+# mi_age ------------------------------------------------------------------
+
+mi[ , .N , age]
+
+
 # mi_length ---------------------------------------------------------------
 
 mi[ , summary(length.1) , ]
@@ -924,6 +963,11 @@ mn[ , .N , .(species.1, species.2)][ order(-species.1)]
 mn[ , species.1 := gsub(" ", "_", tolower(species.1)) ]
 
 mn[ species.1 == "bluegill", species.1 := "bluegill_sunfish"]
+
+
+# mn_age ------------------------------------------------------------------
+
+mn[ , .N , age] #some of those are certainly not right!
 
 
 # mn_length ---------------------------------------------------------------
@@ -1025,6 +1069,8 @@ wi[ , .N , species.1 ]
 
 wi[species.1 == "bluegill", species.1 := "bluegill_sunfish"  , ]
 
+wi[species.1 == "northern_pike_x_muskellunge", species.1 := "tiger_muskellunge"  , ]
+
 
 
 # wi_age ------------------------------------------------------------------
@@ -1052,13 +1098,204 @@ rm(wi_locs, wi_inland_lenage_19Mar2021)
 # sd ----------------------------------------------------------------------
 
 
-ia <- rbindlist(list(rbindlist(list(ia_CCF_age_length_21Aug2021,
-                                    ia_BLG_age_length_21Aug2021),
+sd <- rbindlist(list(rbindlist(list(sd_length_age_4Oct2021,
+                                    sd_NOP_age_growth_3Nov2022),
                                fill = TRUE,
                                use.names = TRUE),
-                     ia_age_length_21Aug2021),
+                     sd_sauger_saugeye_age_growth_03Nov22),
                 fill = TRUE,
                 use.names = TRUE)
+
+colnames(sd)
+cols <- c("state", "lake_name", "survey_id",  #loc dat
+          "date.1", #date dat
+          "species.1", "age", "length.1", #core fish dat
+          "aging_structure", "sex", "weight.1" #extra useful bits
+)
+setcolorder(sd,c(cols))
+colnames(sd)
+
+sd[ ,.N , age]
+
+
+
+# sd_location -------------------------------------------------------------
+
+sd[ , .N , .(survey_id, lake_name, date.1) ]
+
+names(sd_locs) <- word(names(sd_locs),1,sep = ",")
+
+sd_srvys <- merge(sd_srvys, sd_locs, all.x = T )
+
+sd[ , survey_id := gsub("\\{|\\}" , "" , survey_id) ,  ]
+
+sum(is.na(match(sd[ ,survey_id ,], sd_srvys[,SurveyID]))) #most  fish obs have a survey ID that worked. 
+
+colnames(sd_srvys)[names(sd_srvys)=="SurveyID"] <- "survey_id"
+
+sd_srvys <- sd_srvys[!duplicated(survey_id)]
+
+colnames(sd)
+
+sd <- merge(sd, sd_srvys, by = "survey_id", all.x = T)
+
+sd[ , length(unique(sample_id.1)) ,]
+
+sd[ is.na(Longitude), .N]
+
+colnames(sd)
+
+#there are some fish obs that went unmatched: here I directly match these to a lake ID (instead of a survey)
+sd[is.na(Name), .N , .(lake_name, StateID) ][,StateID]
+
+sd_locs[ StateID %in% sd[is.na(Name), .N , .(lake_name, StateID) ][,StateID]]
+
+sd[is.na(Name),   , ][sd_locs[!duplicated(StateID)], on = "StateID"][is.na(i.Longitude)]
+
+sd.a <- sd[!is.na(Name), ]
+
+sd.b <- sd[is.na(Name)]
+
+sd.b <- merge(sd.b, sd_locs, by = "StateID", all.x = T)
+
+names(sd.b)
+
+sd.b[ , c("Acres.x","Name.x","Latitude.x","Longitude.x", "County.x") := NULL , ]
+
+colnames(sd.b) <- gsub("\\.y", "", colnames(sd.b))
+
+sd <- rbindlist(list(sd.a,sd.b), fill = TRUE , use.names = TRUE)
+
+rm(sd.a, sd.b)
+
+sd[is.na(Longitude), .N , .(survey_id, lake_name, date.1, species.1) ]
+
+sd[ ,"latitude" := Latitude , ]
+sd[ ,"longitude" := Longitude , ]
+
+colnames(sd)
+sd[is.na(lake_name) , lake_name := Name,]
+
+sd[ , c("Latitude", "Longitude", "FMA", "Waterbody", "ObjectID", "Station", "Method", "MethodCode", "Effort", "Acres", "Name") := NULL , ]
+
+colnames(sd)[colnames(sd) == "StateID"] <- "lake_id" 
+colnames(sd)[colnames(sd)=="County"] <- "county"
+
+#14 rows from Wi will go unmatched
+
+
+# sd_date -----------------------------------------------------------------
+
+names(sd)
+
+sd[ , summary(date.1) , ]#some data came with a date, others drew dates from the survey table
+sd[ , date.1 := as.IDate(date.1) ,]
+sd[ , date_clean := date.1 , ]
+
+sd[ , any(is.na(as.IDate(SurveyDate, format = "%m/%d/%Y"))) ,]
+sd[ , SurveyDate := as.IDate(SurveyDate, format = "%m/%d/%Y") , ]
+
+sd[is.na(date.1) , date_clean := SurveyDate ,]
+
+sd[is.na(date_clean), ]
+sd[ , summary(date_clean) , ]
+
+sd[ , hist(year(date_clean)) ,]
+sd[ , hist(yday(date_clean)) ,]
+
+colnames(sd)[colnames(sd)=="SurveyDate"] <- "date.2"
+
+
+
+# sd_species --------------------------------------------------------------
+
+sd[ , .N , species.1 ]
+
+sd[ , species.1 := gsub(" ", "_", tolower(species.1))]
+
+sd[species.1 == "bluegill", species.1 := "bluegill_sunfish"]
+
+
+# sd_age ------------------------------------------------------------------
+
+sd[ , hist(age) ,]
+
+
+# sd_length ---------------------------------------------------------------
+
+sd[ , hist(as.numeric(length.1)) , ]
+
+sd[ , unique(length.1) ,]
+
+sd[ , length.1 := as.numeric(length.1) ,] # verified NA introduced for NULL vals
+sd[ !is.na(length.1) , mean(length.1) , .(original_file_name.1,species.1) ] #these look like millimeters to me!
+
+sd[ , length_unit.1 := "millimeters"]
+
+
+plot(length.1~age, data = sd[species.1=="walleye"])
+
+rm(sd_length_age_4Oct2021, sd_locs, sd_srvys, sd_NOP_age_growth_3Nov2022, sd_sauger_saugeye_age_growth_03Nov22)
+
+
+
+# merge all files ---------------------------------------------------------
+
+
+cols <- c("state", "latitude", "longitude", #loc dat
+          "date_clean", #date dat
+          "species.1", "age", "length.1", "length_unit.1" #core fish dat
+          )
+
+ar[ , .SD , .SDcols = cols]
+ia[ , .SD , .SDcols = cols]
+il[ , .SD , .SDcols = cols]
+indy[ , .SD , .SDcols = cols]
+mi[ , .SD , .SDcols = cols]
+mn[ , .SD , .SDcols = cols]
+# on[ , .SD , .SDcols = cols] # no lat/longs
+# ne[ , .SD , .SDcols = cols] #no ages
+sd[ , .SD , .SDcols = cols]
+wi[ , .SD , .SDcols = cols]
+
+laa <-rbindlist(list(ar[ , .SD , .SDcols = cols],
+                                     ia[ , .SD , .SDcols = cols],
+                                     il[ , .SD , .SDcols = cols],
+                                     indy[ , .SD , .SDcols = cols],
+                                     mi[ , .SD , .SDcols = cols],
+                                     mn[ , .SD , .SDcols = cols],
+                                     sd[ , .SD , .SDcols = cols],
+                                     wi[ , .SD , .SDcols = cols]),
+                               fill = TRUE,
+                               use.names = TRUE)
+
+laa <-rbindlist(list(ar,
+                     ia,
+                     il,
+                     indy,
+                     mi,
+                     mn,
+                     sd,
+                     wi),
+                fill = TRUE,
+                use.names = TRUE)
+
+
+# fwrite(laa, file = "C:\\Users\\verh0064\\Desktop\\laa_merged.csv")
+
+laa[ !is.na(length.1)& !is.na(age) & !is.na(latitude), .(.N, max(latitude), min(latitude)) , species.1 ][order(-N)]
+
+laa[ !is.na(length.1)& !is.na(age) & !is.na(latitude), .("count" = .N, "prop_total" = .N/nrow(laa[ !is.na(length.1)& !is.na(age) & !is.na(latitude)])), state]
+
+
+
+
+
+
+
+
+
+
 
 
 
