@@ -1389,13 +1389,20 @@ laa[ !is.na(length.1)& !is.na(age) & !is.na(latitude), .("count" = .N, "prop_tot
 
 
 
+crosswalk_fodder <- laa[ , .N , .(state, county, lake_name, lake_id, secondary_lake_id, latitude, longitude)]
 
 
+# nhdid_crosswalk ---------------------------------------------------------
 
 
+nhds <- fread("C:\\Users\\verh0064\\Desktop\\lake_id_crosswalk.csv")
 
 
+sum(laa[ state == "Minnesota", .N , lake_id][ , lake_id , ] %in% word(nhds[ , MNDOW_ID], -1, sep = "_"))
 
+nhds[ , MNDOW_ID_c := word(MNDOW_ID, -1, sep = "") ]
+
+laa[ state == "Minnesota", nhdhr := ]
 
 
 
