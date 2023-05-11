@@ -32,15 +32,20 @@ laa[state == "Minnesota" & !str_detect(lake_id, "[a-zA-Z]"), subbasin := substr(
 laa[state == "Minnesota" , .N , subbasin]
 laa[!is.na(subbasin), .N , ]
 
-# so what we can do here is try to merge only to the dows that have a subbasin:
-#we'll call that a, then do a merge on the other half of MN data call that b, then rbind a,b
-#this is a clean merge ()
-a <- merge(laa[!is.na(subbasin) & subbasin != "00", , ], nhds, by.x = "lake_id", by.y = "MNDOW_ID_c")
+# # so what we can do here is try to merge only to the dows that have a subbasin:
+# #we'll call that a, then do a merge on the other half of MN data call that b, then rbind a,b
+# #this is a clean merge ()
+# a <- merge(laa[!is.na(subbasin) & subbasin != "00", , ], nhds, by.x = "lake_id", by.y = "MNDOW_ID_c")
+# 
+# #this half is NOT
+# merge(laa[!is.na(subbasin) & subbasin == "00", , ], nhds, by.x = "lake_id", by.y = "MNDOW_ID_c")
+# 
+# laa[!is.na(subbasin) & subbasin == "00", .N , lake_id ] # these each need an nhdid
 
-#this half is NOT
-merge(laa[!is.na(subbasin) & subbasin == "00", , ], nhds, by.x = "lake_id", by.y = "MNDOW_ID_c")
 
-laa[!is.na(subbasin) & subbasin == "00", .N , lake_id ] # these each need an nhdid
+
+# mn ----------------------------------------------------------------------
+
 
 #I want to cast this thing wider so that each MN DOW only has one row
 molten <- melt(nhds[!is.na(MNDOW_ID), ], id.vars = "MNDOW_ID_c", na.rm = TRUE)
@@ -67,9 +72,61 @@ mn_laa[ , .N, NHD_ID][ , hist(log(N)) , ]
 #now we simply re-run this process state by state (assuming that all the data within a state match something in that crosswalk cleanly)
 
 
+# wi ----------------------------------------------------------------------
+
+#I want to cast this thing wider so that each WBIC only has one row
+molten <- melt(nhds[!is.na(WBIC_ID), ], id.vars = "WBIC_ID", na.rm = TRUE)
+
+any(duplicated(molten))
+
+molten <- molten[!duplicated(molten)]
+
+molten[ , case := seq_len(.N) , .(WBIC_ID,variable) ]
+
+molten[ , variable.v := paste(variable,case, sep = ".")]
+
+nhds.wikey <- dcast(molten, WBIC_ID ~ variable.v, value.var = "value")
+
+names(nhds.wikey)[names(nhds.wikey)== "site_id.1"] <- "NHD_ID"
+
+#add a col in the NHDs that strips out the colnames
+nhds.wikey[ , WBIC_ID_c := gsub("WBIC_", "", WBIC_ID)  ]
 
 
+# now smooth: 
+wi_laa <- merge(laa[state == "Wisconsin"], nhds.wikey, by.x = "lake_id", by.y = "WBIC_ID_c", all.x = TRUE)
 
+wi_laa[ , .N, NHD_ID][ , hist(log(N)) , ]
+wi_laa[ , summary(as.numeric(gsub("nhdhr_", "", NHD_ID))) , ]
+
+
+# mi ----------------------------------------------------------------------
+
+
+#I want to cast this thing wider so that each WBIC only has one row
+molten <- melt(nhds[!is.na(WBIC_ID), ], id.vars = "WBIC_ID", na.rm = TRUE)
+
+any(duplicated(molten))
+
+molten <- molten[!duplicated(molten)]
+
+molten[ , case := seq_len(.N) , .(WBIC_ID,variable) ]
+
+molten[ , variable.v := paste(variable,case, sep = ".")]
+
+nhds.wikey <- dcast(molten, WBIC_ID ~ variable.v, value.var = "value")
+
+names(nhds.wikey)[names(nhds.wikey)== "site_id.1"] <- "NHD_ID"
+
+#add a col in the NHDs that strips out the colnames
+nhds.wikey[ , WBIC_ID_c := gsub("WBIC_", "", WBIC_ID)  ]
+
+
+# now smooth: 
+mi_laa <- merge(laa[state == "Wisconsin"], nhds.wikey, by.x = "lake_id", by.y = "WBIC_ID_c", all.x = TRUE)
+
+wi_laa[ , .N, NHD_ID][ , hist(log(N)) , ]
+wi_laa[ , summary(as.numeric(gsub("nhdhr_", "", NHD_ID))) , ]
 
 
 
