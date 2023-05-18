@@ -1,11 +1,16 @@
 # nhdid_crosswalk ---------------------------------------------------------
 
+library(data.table)
+# update_dev_pkg()
+library(sharpshootR)
+library(stringr)
+
+
+
 # load the length at age data and the nhd id crosswalk key
 load(file = "scripts&data/data/output/length_age_merged.RData")
 
-nhds <- fread("C:\\Users\\verh0064\\Desktop\\lake_id_crosswalk.csv") #https://www.sciencebase.gov/catalog/item/6206d3c2d34ec05caca53071
-
-
+nhds <- fread("scripts&data/data/input/lake_id_crosswalk.csv") #https://www.sciencebase.gov/catalog/item/6206d3c2d34ec05caca53071
 
 #scope out the MN merge
 
@@ -102,66 +107,116 @@ wi_laa[ , summary(as.numeric(gsub("nhdhr_", "", NHD_ID))) , ]
 
 # mi ----------------------------------------------------------------------
 
+#goddam GDrive scrapped a script where i thoroughly investigate this, BUT MI data do not have any nice keys in the NHDhr crosswalk from the USGS folks. 
 
-#I want to cast this thing wider so that each WBIC only has one row
-molten <- melt(nhds[!is.na(WBIC_ID), ], id.vars = "WBIC_ID", na.rm = TRUE)
+#here's a snapshot of things to show off the problem:
 
-any(duplicated(molten))
+laa[state == "Michigan", .N, .(lake_id, secondary_lake_id, lake_name, county, latitude, longitude) ]
 
-molten <- molten[!duplicated(molten)]
+laa[state =="Michigan", unique(secondary_lake_id)]
 
-molten[ , case := seq_len(.N) , .(WBIC_ID,variable) ]
+# here are the three semi-consistent sets of ID's we could try to key to
+laa[state =="Michigan", unique(lake_id)]
 
-molten[ , variable.v := paste(variable,case, sep = ".")]
+laa[state =="Michigan" &
+      str_detect(secondary_lake_id, "[A-Za-z]"), unique(secondary_lake_id)] # these are PLSS w/ some mod final 2 characters, none of the NHDs have this. COuld conver to lat/lon
 
-nhds.wikey <- dcast(molten, WBIC_ID ~ variable.v, value.var = "value")
+laa[state =="Michigan" &
+      !str_detect(secondary_lake_id, "[A-Za-z]"), unique(secondary_lake_id)]
 
-names(nhds.wikey)[names(nhds.wikey)== "site_id.1"] <- "NHD_ID"
+colnames(nhds)# could try LAGOS
+nhds[  , unique(gsub("LAGOS_" , "", LAGOS_ID)) ,]
 
-#add a col in the NHDs that strips out the colnames
-nhds.wikey[ , WBIC_ID_c := gsub("WBIC_", "", WBIC_ID)  ]
-
-
-# now smooth: 
-mi_laa <- merge(laa[state == "Wisconsin"], nhds.wikey, by.x = "lake_id", by.y = "WBIC_ID_c", all.x = TRUE)
-
-wi_laa[ , .N, NHD_ID][ , hist(log(N)) , ]
-wi_laa[ , summary(as.numeric(gsub("nhdhr_", "", NHD_ID))) , ]
-
+match(laa[state =="Michigan" &
+            !str_detect(secondary_lake_id, "[A-Za-z]"), unique(secondary_lake_id)], 
+      nhds[  , unique(gsub("LAGOS_" , "", LAGOS_ID)) ,]
+      )#NOPE
 
 
+# could try MGLP
+nhds[ str_detect(MGLP_ID, "MI") , unique(gsub("MGLP_" , "", MGLP_ID)) ,]
+
+nhds[ str_detect(MGLP_ID, "MI") , unique(str_sub(MGLP_ID, -5,-1)) ,]
+
+match(laa[state =="Michigan" &
+            !str_detect(secondary_lake_id, "[A-Za-z]"), unique(secondary_lake_id)], 
+      nhds[ str_detect(MGLP_ID, "MI") , unique(str_sub(MGLP_ID, -5,-1)) ,]
+)#NOPE
 
 
+#anywho-- no worky could give PLSS lat longs a try with https://rdrr.io/cran/sharpshootR/man/PLSS2LL.html
 
+mi_plss <- laa[ state == "Michigan" & 
+                  is.na(latitude) & 
+                  str_detect(secondary_lake_id, "[A-Za-z]") & 
+                  !secondary_lake_id == "ONTON01"
+                , .N , .(secondary_lake_id) ]
 
-
-
-
-
-
-nhds[!is.na(MNDOW_ID_c) , .N , MNDOW_ID_c][N>1, MNDOW_ID_c]
-
-
-# a <- nhds[MNDOW_ID_c %in% nhds[!is.na(MNDOW_ID_c) , .N , MNDOW_ID_c][N>1, MNDOW_ID_c], ]
-
-#but there IS a one-to-one match in the DOW to NHDHD in this group. 
-# a[ , .N , .(MNDOW_ID_c, site_id) ]
-
-#I want to cast this thing wider so that each NHDID only has one row
-molten <- melt(nhds, id.vars = "site_id", na.rm = TRUE)
-
-any(duplicated(molten))
-
-molten <- molten[!duplicated(molten)]
-
-molten[ , case := seq_len(.N) , .(variable, site_id) ]
-
-molten[ , variable.v := paste(variable,case, sep = ".")]
-
-nhds.w <- dcast(molten[!is.na(value)], site_id~variable.v, value.var = "value")
+mi_plss[ , t := paste("T", str_sub(secondary_lake_id, 1, 3), sep = "")  ]
+mi_plss[ , r := paste("R", str_sub(secondary_lake_id, 4, 6), sep = "")  ]
+mi_plss[ , s := str_sub(secondary_lake_id, 7, 8)  ]
+mi_plss[ , type := "SN"  ]
+mi_plss[ , m := "MI19"  ]
+mi_plss[ , id := .I , ]
+mi_plss[ , ':=' (q = NA, qq = NA)]
 
 
 
+# generate formatted PLSS codes
+mi_plss[ ,plssid :=  formatPLSS(data.frame(mi_plss)) ]
+
+# fetch lat/long coordinates
+mi_plss <- cbind(mi_plss, PLSS2LL(mi_plss))
+
+laa[state == "Michigan" & 
+      is.na(latitude), latitude := mi_plss[match(laa[state == "Michigan" & 
+            is.na(latitude),secondary_lake_id], mi_plss[,secondary_lake_id]), lat
+        
+      ] ]
+
+laa[state == "Michigan" & 
+      is.na(longitude), longitude := mi_plss[match(laa[state == "Michigan" & 
+                                                       is.na(longitude),secondary_lake_id], mi_plss[,secondary_lake_id]), lon
+                                           
+      ] ]
+
+# that filled a bunch! (but doesn't really fix the connection to Lindsay Platts crosswalk table...)
+laa[state == "Michigan", .N, .(lake_id, secondary_lake_id, lake_name, county, latitude, longitude) ]
+
+laa[state == "Michigan" & is.na(latitude), .N, .(lake_id, secondary_lake_id, lake_name, county, latitude, longitude) ]
+
+
+# ia ----------------------------------------------------------------------
+
+a <- laa[state == "Iowa", .N, .(lake_id, secondary_lake_id, lake_name, county, latitude, longitude)][order(lake_name,county)]
+
+sort(nhds[ , unique(gsub("IADNR_", "" , IADNR_ID)) ,])
+
+#first let's check coverage on the IDs we have:
+
+match( laa[state == "Iowa", unique(lake_id)] , 
+       nhds[ , unique(gsub("IADNR_", "" , IADNR_ID)) ,]
+       )
+#matched
+sum(!is.na(match( laa[state == "Iowa", unique(lake_id)] , 
+       nhds[ , unique(gsub("IADNR_", "" , IADNR_ID)) ,]
+)))
+#unmatched
+sum(is.na(match( laa[state == "Iowa", unique(lake_id)] , 
+                  nhds[ , unique(gsub("IADNR_", "" , IADNR_ID)) ,]
+)))
+#call those out
+laa[state == "Iowa", unique(lake_id)][is.na(match( laa[state == "Iowa", unique(lake_id)] , 
+                                                   nhds[ , unique(gsub("IADNR_", "" , IADNR_ID)) ,]
+))]
+
+#can we backfill any of these lake IDs?
+
+laa[state == "Iowa", .N, .(lake_id, secondary_lake_id, lake_name, county, latitude, longitude)][order(lake_name,county)][is.na(lake_id)]
+
+#anita
+laa[state == "Iowa" & is.na(lake_id) &
+      lake_name == "anita" ,.N]
 
 
 
@@ -169,4 +224,50 @@ nhds.w <- dcast(molten[!is.na(value)], site_id~variable.v, value.var = "value")
 
 
 
-b <- dcast(a, site_id + MNDOW_ID + MNDOW_ID_c ~ MGLP_ID)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
