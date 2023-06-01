@@ -181,10 +181,104 @@ laa[state == "Michigan" &
       ] ]
 
 # that filled a bunch! (but doesn't really fix the connection to Lindsay Platts crosswalk table...)
-laa[state == "Michigan", .N, .(lake_id, secondary_lake_id, lake_name, county, latitude, longitude) ]
+laa[state == "Michigan", .N, .( lake_id, secondary_lake_id, lake_name, county, latitude, longitude) ]
 
 laa[state == "Michigan" & is.na(latitude), .N, .(lake_id, secondary_lake_id, lake_name, county, latitude, longitude) ]
 
+# May 2023 we recieved a crosswalk/key from Jared Ross at Michigan State University
+# Arthur and I worked with Kevin Wehrly to hopefully help address this issue.  I’ve resent the geodatabase of lakes using the FileDepot service (might take 10-15 minutes),
+# but also attached here is a csv that should provide a linkage to your fish data and the Michigan crosswalk 
+
+# 1. survey_id from your fish table = Survey_Number in the attached file,
+# 2. unique_id should help link to the crosswalk table
+# 3. Within the geodatabase, the “lake_information” table should provide an NHD ID you can pull over after linking lagoslakeid (I wouldn’t call that an easy match!).
+
+laa[state == "Michigan", .N, .(survey_id, lake_id, secondary_lake_id, lake_name, county, latitude, longitude) ]
+
+mi_locs[ , .N , Survey_Number]
+
+# check match 1.
+match(laa[state == "Michigan", .N, .(survey_id) ][,survey_id], mi_locs[, Survey_Number]
+)
+
+#check match 2.
+match(mi_locs[,UNIQUE_ID], mi_lagos_crosswalk[,UNIQUE_ID])
+
+#check lagosID matches to lplatt table -- kinda shitty
+#nomatches
+sum(is.na(match(mi_lagos_crosswalk[!lagoslakeid == -999,lagoslakeid], nhds[  , unique(as.integer(gsub("LAGOS_" , "", LAGOS_ID))) ,])))
+#goodmatches
+sum(!is.na(match(mi_lagos_crosswalk[!lagoslakeid == -999,lagoslakeid], nhds[  , unique(as.integer(gsub("LAGOS_" , "", LAGOS_ID))) ,])))
+
+#the last bit here (connecting to the .gdb that jared sent) seems irrelevant-- we've got the lagos-NHDID crosswalk built into THE NHDS table. 
+
+
+# DO
+# add "survey_number to mi in laa
+mi_locs <- merge(mi_locs, mi_lagos_crosswalk, by = "UNIQUE_ID", all.x = T)
+
+mi_laa <- laa[state == "Michigan"]
+mi_laa[ , survey_id := as.integer(survey_id) ,]
+
+mi_laa <- merge(mi_laa, mi_locs, by.x = "survey_id", by.y = "Survey_Number", all.x = T)
+
+#still missing 4 lagos IDs
+mi_laa[state == "Michigan", .N, .(survey_id, lake_id, secondary_lake_id, lake_name, county, latitude, longitude, lagoslakeid) ][, summary(lagoslakeid)]
+# and still more NAs
+mi_laa[lagoslakeid == -999, lagoslakeid := NA]
+
+# check lagos IDs 
+sum(mi_laa[ , unique(lagoslakeid) , ] %in% nhds[  , unique(as.integer(gsub("LAGOS_" , "", LAGOS_ID))) ,])
+
+sum(mi_laa[ , unique(lagoslakeid) , ] %in% nhds[  , unique(as.integer(gsub("LAGOS_" , "", LAGOS_ID))) ,])
+sum(!(mi_laa[ , unique(lagoslakeid) , ] %in% nhds[  , unique(as.integer(gsub("LAGOS_" , "", LAGOS_ID))) ,]))
+
+#I want to cast this thing wider so that each LAGOS only has one row
+molten <- melt(nhds[!is.na(LAGOS_ID), ], id.vars = "LAGOS_ID", na.rm = TRUE)
+
+any(duplicated(molten))
+
+molten <- molten[!duplicated(molten)]
+
+molten[ , case := seq_len(.N) , .(LAGOS_ID,variable) ]
+
+molten[ , variable.v := paste(variable,case, sep = ".")]
+
+nhds.lagoskey <- dcast(molten, LAGOS_ID ~ variable.v, value.var = "value")
+
+names(nhds.lagoskey)[names(nhds.lagoskey)== "site_id.1"] <- "NHD_ID"
+
+nhds.lagoskey[ , LAGOS_ID_c := as.integer(gsub("LAGOS_" , "", LAGOS_ID)) , ] 
+
+# now smooth merge: 
+mi_laa <- merge(mi_laa, nhds.lagoskey, by.x = "lagoslakeid", by.y = "LAGOS_ID_c", all.x = TRUE)
+
+mi_laa[ , .N, NHD_ID][ , hist(log(N)) , ]
+
+mi_laa[state == "Michigan", .N, .(NHD_ID, survey_id, lake_id, secondary_lake_id, lake_name, county, latitude, longitude, lagoslakeid) ][ ,.N, is.na(NHD_ID) ] #374 lakes of 556 with NHDs (this number *might* be improved by usging the gdb provided by MSU crew)
+
+mi_laa[state == "Michigan", .N, .(NHD_ID, survey_id, lake_id, secondary_lake_id, lake_name, county, latitude, longitude, lagoslakeid) ][ ,.N, is.na(lagoslakeid) ] 
+
+names(mi_laa) # there are alot of junk cols here. 
+mi_laa[  ,.N, .(is.na(LAT_DD), is.na(latitude))  ]
+
+mi_laa[ , .N , .(survey_id, NHD_ID, lagoslakeid) ]
+
+#use this many column'd mess to get a cleaner mi_laa
+# mi_laa <- merge(laa[state == "Michigan"], mi_laa, by.x = "lake_id", by.y = "WBIC_ID_c", all.x = TRUE)
+
+mi_laa[ , 131:149 := NULL , ]
+
+library(sf)
+mi_lakeinformation <- st_read(dsn = "E:\\Shared drives\\Hansen Lab\\RESEARCH PROJECTS\\Fish Survey Data\\MI_Data\\FileDepot-UpYTQqaSS7gtVQW7\\MGLP_LAGOS_Oct_2022.gdb\\MGLP_LAGOS_Oct_2022.gdb\\MGLP_LAGOS.gdb", layer = "lake_information")
+
+sum(mi_laa[is.na(NHD_ID) , lagoslakeid] %in% mi_lakeinformation[, "lake_information_csv_lagoslakeid"])
+
+mi_laa[is.na(NHD_ID), NHD_ID := mi_lakeinformation[match(mi_laa[is.na(NHD_ID) , lagoslakeid], mi_lakeinformation[, "lake_information_csv_lagoslakeid"]), "lake_information_csv_lake_nhdid" ]]
+
+mi_laa[ , .N , .(is.na(NHD_ID),is.na(lagoslakeid)) ]
+
+fwrite(mi_laa, file = "E:\\My Drive\\Documents\\UMN\\Hansen Lab\\Rprojects\\CASC_fish_growth\\scripts&data\\data\\output\\mi_with_lagos.csv")
 
 # ia ----------------------------------------------------------------------
 
@@ -219,8 +313,17 @@ laa[state == "Iowa" & is.na(lake_id) &
       lake_name == "anita" ,.N]
 
 
+# merge back together -----------------------------------------------------
 
+laa_nhds <- rbindlist(list(rbindlist(list(mi_laa,
+                                    mn_laa),
+                               fill = TRUE,
+                               use.names = TRUE),
+                     wi_laa),
+                fill = TRUE,
+                use.names = TRUE)
 
+saveRDS(laa_nhds, file = "scripts&data\\data\\output\\laa_nhds.rds")
 
 
 

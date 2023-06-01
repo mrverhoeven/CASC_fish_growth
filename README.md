@@ -18,7 +18,7 @@ GENERAL INFORMATION
   Principal Investigator Contact Information
     Name: Mike Verhoeven
     Institution: UNiversity of Minnesota-Twin Cities
-    Address: 135 Skok Hall; 2003 Upper Bufor Circle; St Paul, MN 55108
+    Address: 135 Skok Hall; 2003 Upper Buford Circle; St Paul, MN 55108
     Email: michael.verhoeven.mrv@gmail.com
 	  ORCID: 0000-0002-6340-9490
 

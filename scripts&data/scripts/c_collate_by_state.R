@@ -574,12 +574,12 @@ indy[lake_name == "Cypress Lake", survey_id := 273 ]
 
 in_reservoir_age_effort_16Aug2022[lake_name == "Brookville", survey_id]
 
-# The following survey ID has no match in th join... based on the funky low N in #478 and the fact the 479 is a survey on Ferdinand State forest from anothe IN file... change survey_id to 478 where 479
+# The following survey ID has no match in th join... based on the funky low N in #478 and the fact the 479 is a survey on Ferdinand State forest from another IN file... change survey_id to 478 where 479
 indy[survey_id %in% c(471, 478, 484, 486, 479) , .N , .(survey_id, state, lake_name, survey_id) ]
 indy[survey_id == 479, survey_id := 478 ]
 
 
-
+#link fish data to effort data (contains locs)
 indy <- merge(indy, in_reservoir_age_effort_16Aug2022, by = "survey_id", all.x = T, all.y =F,  suffixes = c(".laa", ".effort"))
 
 
