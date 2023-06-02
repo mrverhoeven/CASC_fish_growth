@@ -441,7 +441,7 @@ ia[, c("state.geoloc") := NULL, ]
 # il ----------------------------------------------------------------------
 
 il_aged_fish_surveys_28Dec2022[ , .N , age ]
-il_catch_age_effort_17Jan22[ , .N , age] # no reason to import these data. 
+il_catch_age_effort_17Jan22[ , .N , age] # no reason to import these data (I think they just have T/F for age)
 
 
 
