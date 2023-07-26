@@ -131,7 +131,7 @@ sd_srvys <- fread("E:\\Shared drives\\Hansen Lab\\RESEARCH PROJECTS\\Fish Survey
 sd_locs <- fread("E:\\Shared drives\\Hansen Lab\\RESEARCH PROJECTS\\Fish Survey Data\\SD_Data\\ManagedFisheries.csv")
 
 #import MI loc data
-mi_locs <- fread("E:\\Shared drives\\Hansen Lab\\RESEARCH PROJECTS\\Fish Survey Data\\MI_Data\\mi_raw_disaggregated_data\\mi_lake_id_crosswalk_23May2023.csv")
-mi_lagos_crosswalk <- fread("E:\\Shared drives\\Hansen Lab\\RESEARCH PROJECTS\\Fish Survey Data\\MI_Data\\mi_raw_disaggregated_data\\Michigan_crosswalk_7-15-2022.csv")
+mi_locs <- fread("E:\\Shared drives\\Hansen Lab\\RESEARCH PROJECTS\\Fish Survey Data\\MI_Data\\mi_raw_disaggregated_data\\mi_survey_id_crosswalk_23May2023.csv")
+mi_lagos_crosswalk <- fread("E:\\Shared drives\\Hansen Lab\\RESEARCH PROJECTS\\Fish Survey Data\\MI_Data\\mi_raw_disaggregated_data\\mi_lake_id_crosswalk_15July2022.csv")
 
 

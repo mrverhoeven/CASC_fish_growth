@@ -9,7 +9,7 @@ library(sf)
 
 
 # load the length at age data and the nhd id crosswalk key
-load(file = "scripts&data/data/output/length_age_merged.RData")
+# load(file = "scripts&data/data/output/length_age_merged.RData")
 
 nhds <- fread("scripts&data/data/input/lake_id_crosswalk.csv") #https://www.sciencebase.gov/catalog/item/6206d3c2d34ec05caca53071
 
@@ -131,7 +131,7 @@ wi_laa <- wi_laa[, .SD , .SDcols = \(x) !all(is.na(x))]
 # 2. unique_id should help link to the crosswalk table
 # 3. Within the geodatabase, the “lake_information” table should provide an NHD ID you can pull over after linking lagoslakeid (I wouldn’t call that an easy match!)."
 
-laa[state == "Michigan", .N, .(survey_id, lake_id, secondary_lake_id, lake_name, county, latitude, longitude) ]
+laa[state == "Michigan", .N, .(survey_id, lake_id, secondary_lake_id, lake_name.1, county, latitude, longitude) ]
 
 mi_locs[ , .N , Survey_Number]
 
@@ -247,9 +247,9 @@ mi_laa[is.na(latitude), `:=` (latitude  = mi_locs[match(mi_laa[is.na(latitude), 
 
 
 
-mi_laa[ ,.N, .(NHD_ID, survey_id, lake_id, secondary_lake_id, lake_name, county, latitude, longitude, LAGOS_ID) ][ ,.N, is.na(NHD_ID) ] #17 lakes of 556 with missing NHDs
+mi_laa[ ,.N, .(NHD_ID, survey_id, lake_id, secondary_lake_id, lake_name.1, county, latitude, longitude, LAGOS_ID) ][ ,.N, is.na(NHD_ID) ] #17 lakes of 556 with missing NHDs
 
-mi_laa[is.na(NHD_ID) , .N , .(NHD_ID, survey_id, lake_id, secondary_lake_id, lake_name, county, latitude, longitude, LAGOS_ID) ]
+mi_laa[is.na(NHD_ID) , .N , .(NHD_ID, survey_id, lake_id, secondary_lake_id, lake_name.1, county, latitude, longitude, LAGOS_ID) ]
 
 
 
@@ -281,14 +281,14 @@ mi_plss <- cbind(mi_plss, PLSS2LL(mi_plss))
 
 mi_laa[is.na(latitude), `:=` (latitude  = mi_plss[match(mi_laa[is.na(latitude),secondary_lake_id], mi_plss[,secondary_lake_id]), lat],
                              longitude = mi_plss[match(mi_laa[is.na(latitude),secondary_lake_id], mi_plss[,secondary_lake_id]), lon])]
-mi_laa[state == "Michigan", .N, .(NHD_ID, survey_id, lake_id, secondary_lake_id, lake_name, county, latitude, longitude, LAGOS_ID) ][ ,.N, is.na(NHD_ID) ] 
+mi_laa[state == "Michigan", .N, .(NHD_ID, survey_id, lake_id, secondary_lake_id, lake_name.1, county, latitude, longitude, LAGOS_ID) ][ ,.N, is.na(NHD_ID) ] 
 
 mi_laa[ , .N, NHD_ID][ , hist(N) , ]
 
 
 # ia ----------------------------------------------------------------------
 
-a <- laa[state == "Iowa", .N, .(lake_id, secondary_lake_id, lake_name, county, latitude, longitude)][order(lake_name,county)]
+a <- laa[state == "Iowa", .N, .(lake_id, secondary_lake_id, lake_name.1, county, latitude, longitude)][order(lake_name.1,county)]
 
 sort(nhds[ , unique(gsub("IADNR_", "" , IADNR_ID)) ,])
 
@@ -311,17 +311,17 @@ laa[state == "Iowa", unique(lake_id)][is.na(match( laa[state == "Iowa", unique(l
 ))]
 
 #can we backfill any of these lake IDs?
-laa[state == "Iowa", .N, .(lake_id, secondary_lake_id, lake_name, county, latitude, longitude)][order(lake_name,county)][is.na(lake_id)]
+laa[state == "Iowa", .N, .(lake_id, secondary_lake_id, lake_name.1, county, latitude, longitude)][order(lake_name.1,county)][is.na(lake_id)]
 
 a <- laa[state == "Iowa" & is.na(lake_id)]
-a[ , .N , .(lake_name,county,lake_id)]
+a[ , .N , .(lake_name.1,county,lake_id)]
 
 b <- laa[state == "Iowa" & !is.na(lake_id)]
-b[ , .N , .(lake_name, county)]
+b[ , .N , .(lake_name.1, county)]
 
 #fill codes first with county, then without it 
-a[ , `:=` (lake_id = b[match(a[, paste(lake_name,county)],b[ , paste(lake_name,county)]) , lake_id])]
-a[is.na(county) , `:=` (lake_id = b[match(a[is.na(county), lake_name],b[ , lake_name]) , lake_id])]
+a[ , `:=` (lake_id = b[match(a[, paste(lake_name.1,county)],b[ , paste(lake_name.1,county)]) , lake_id])]
+a[is.na(county) , `:=` (lake_id = b[match(a[is.na(county), lake_name.1],b[ , lake_name.1]) , lake_id])]
 
 #fill county, lat and long
 a[ , `:=` (county    = b[match(a[, lake_id],b[ , lake_id]) , county],
@@ -358,7 +358,7 @@ ia_laa[ , .N, NHD_ID][ , hist(log(N)) , ]
 ia_laa[ , .N , is.na(NHD_ID) ] #71% coverage
 
 #we're still missing NHDs for 52/151 waterbodies
-ia_laa[, .N , .(NHD_ID, lake_id, lake_name, county, latitude, longitude) ][order(-is.na(NHD_ID))]
+ia_laa[, .N , .(NHD_ID, lake_id, lake_name.1, county, latitude, longitude) ][order(-is.na(NHD_ID))]
 
 names(ia_laa)
 
@@ -366,13 +366,13 @@ names(ia_laa)
 ia_laa <- ia_laa[, .SD , .SDcols = \(x) !all(is.na(x))]
 
 #this table could go out to IADNR for filling of information (especially NHD_ID, Lat/Long okay too)
-ia_laa[is.na(NHD_ID), .N , .(NHD_ID, lake_id, lake_name, county, latitude, longitude, lake_type,  original_file_name.1, garbage_bin_notes.12 )]
+ia_laa[is.na(NHD_ID), .N , .(NHD_ID, lake_id, lake_name.1, county, latitude, longitude, lake_type,  original_file_name.1, garbage_bin_notes.12 )]
 
 
 
 # il ----------------------------------------------------------------------
 
-laa[state == "Illinois" , .N, .(lake_id, secondary_lake_id, lake_name, county, latitude, longitude, species.1)][order(lake_name,county)]
+laa[state == "Illinois" , .N, .(lake_id, secondary_lake_id, lake_name.1, county, latitude, longitude, species.1)][order(lake_name.1,county)]
 # I don't see anything in here that could be useful as a key to the NHDs. However, we ony have 2 lakes, so could probably retrieve manually. 
 
 names(nhds)
@@ -380,9 +380,9 @@ names(nhds)
 
 # in ----------------------------------------------------------------------
 
-laa[state == "Indiana" , .N, .(site_id.1 , lake_id, secondary_lake_id, lake_name, county, latitude, longitude)][order(lake_name,county)]
+laa[state == "Indiana" , .N, .(site_id.1 , lake_id, secondary_lake_id, lake_name.1, county, latitude, longitude)][order(lake_name.1,county)]
 
-match(laa[state == "Indiana" , .N, .(lake_id, secondary_lake_id, lake_name, county, latitude, longitude)][ ,lake_id] , nhds[ , gsub("nhdhr_", "", site_id) , ])
+match(laa[state == "Indiana" , .N, .(lake_id, secondary_lake_id, lake_name.1, county, latitude, longitude)][ ,lake_id] , nhds[ , gsub("nhdhr_", "", site_id) , ])
 
 in_laa <- laa[state == "Indiana"]
 
@@ -398,7 +398,7 @@ in_laa[ , NHD_ID := lake_id , ]
 
 # sd ----------------------------------------------------------------------
 
-laa[state == "South Dakota" , .N, .(lake_id, secondary_lake_id, lake_name, county, latitude, longitude)][order(lake_name,county)]
+laa[state == "South Dakota" , .N, .(lake_id, secondary_lake_id, lake_name.1, county, latitude, longitude)][order(lake_name.1,county)]
 
 laa[state == "South Dakota" ,unique(lake_id)]
 
@@ -450,7 +450,7 @@ laa_nhds <-
     fill = TRUE,
     use.names = TRUE)
 
-saveRDS(laa_nhds, file = "scripts&data\\data\\output\\laa_nhds.rds")
+# saveRDS(laa_nhds, file = "scripts&data\\data\\output\\laa_nhds.rds")
 
 
 

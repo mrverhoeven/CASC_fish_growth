@@ -43,10 +43,10 @@ latlong2county <- function(pointsDF) {
 #all data have consistent column names because we forced this through the data explainer 
 # we might be able to make a quick key col set by searching all cols for these keywords
 # colnames(ar)[str_detect(colnames(ar), pattern =
-#              "state|lake_name|location_notes|year|date|species|age|length|weight|sex|aging")]
+#              "state|lake_name.1|location_notes|year|date|species|age|length|weight|sex|aging")]
            
            
-cols <- c("state","lake_name", "location_notes.1", #loc dat
+cols <- c("state","lake_name.1", "location_notes.1", #loc dat
           "year","date.1", "date.2", #date dat
           "species.1", "age", "length.1", "length_unit.1", #core fish dat
           "weight.1", "weight_unit.1", "aging_structure", "sex" #extra useful bits
@@ -72,9 +72,9 @@ ar[ , summary(.SD) , .SDcols = cols]
 
 
 #loc dat
-ar[ , .N , .(state,lake_name, location_notes.1)]
-ar[lake_name == "BSL", lake_name := "Bull Shoals Lake"]
-ar[lake_name == "NFL", lake_name := "Norfork Lake"]
+ar[ , .N , .(state,lake_name.1, location_notes.1)]
+ar[lake_name.1 == "BSL", lake_name.1 := "Bull Shoals Lake"]
+ar[lake_name.1 == "NFL", lake_name.1 := "Norfork Lake"]
 
 
 # ar_date -----------------------------------------------------------------
@@ -87,7 +87,7 @@ ar[ , summary(date_clean) , ]
 
 # year
 ar[ , .N , year ]
-ar[is.na(year) & is.na(date_clean), .N , .(lake_name, species.1) ] #there are a few records here for which we have no dates at all. 
+ar[is.na(year) & is.na(date_clean), .N , .(lake_name.1, species.1) ] #there are a few records here for which we have no dates at all. 
 
 # make other dates character strings
 datecols <- colnames(ar)[str_detect(colnames(ar), "date\\.")]
@@ -171,17 +171,17 @@ rm(ar_reservoir_age_8Oct2021, ar_reservoir_age2_8Oct2021, ar_rename)
 
 #get lat/long for locs:
 
-ar[ , .N , .(lake_name, location_notes.1) ]
+ar[ , .N , .(lake_name.1, location_notes.1) ]
 
-ar[ lake_name == "Norfork Lake" , ':=' (latitude = "36.351351" , longitude = "-92.232243")   , ]
-ar[ lake_name == "Bull Shoals Lake" , ':=' (latitude = "36.486572" , longitude = "-92.894508")   , ]
+ar[ lake_name.1 == "Norfork Lake" , ':=' (latitude = "36.351351" , longitude = "-92.232243")   , ]
+ar[ lake_name.1 == "Bull Shoals Lake" , ':=' (latitude = "36.486572" , longitude = "-92.894508")   , ]
 ar[ location_notes.1 == "Location:James River Arm" , ':=' (latitude = "36.718906601766705" , longitude = "-93.59351150562455")   , ]
 ar[ location_notes.1 == "Location:Kings River Arm" , ':=' (latitude = "36.55397644090967" , longitude = "-93.50610006173052")   , ]
 ar[ location_notes.1 == "Location:Mid White River Arm" , ':=' (latitude = "36.60279620933327" , longitude = "-93.50610006173052")   , ]
 ar[ location_notes.1 == "Location:Long Creek Arm" , ':=' (latitude = "36.48231274609963" , longitude = "-93.3020160955791")   , ]
 ar[ location_notes.1 == "Location:Upper White River Arm" , ':=' (latitude = "36.52369836589746" , longitude = "-93.72775995312399")   , ]
 
-ar[ , .N , .(lake_name, location_notes.1, latitude, longitude) ]
+ar[ , .N , .(lake_name.1, location_notes.1, latitude, longitude) ]
 
 
 colnames(ar)
@@ -206,7 +206,7 @@ ia <- rbindlist(list(rbindlist(list(ia_CCF_age_length_21Aug2021,
                 use.names = TRUE)
 
 names(ia)
-cols <- c("state", "county","lake_name", "lake_id", #loc dat
+cols <- c("state", "county","lake_name.1", "lake_id", #loc dat
           "year","date.1", #date dat
           "species.1", "age", "length.1", "length_unit.1", #core fish dat
           "weight.1", "weight_unit.1", "aging_structure", "sex", "aging_data_notes.1", "aging_data_notes.2" #extra useful bits
@@ -218,8 +218,8 @@ setcolorder(ia,c(cols))
 
 #locdat
 # is there any data cap in state or county the we need? 
-ia[ , .N , .(state,county, lake_name, lake_id)]
-all(ia[ , .N , .(state,county, lake_name, lake_id)][,N] == ia[ , .N , .(lake_name, lake_id)][, N]) # all the fish by the larger keyset is captured in lake_name.  
+ia[ , .N , .(state,county, lake_name.1, lake_id)]
+all(ia[ , .N , .(state,county, lake_name.1, lake_id)][,N] == ia[ , .N , .(lake_name.1, lake_id)][, N]) # all the fish by the larger keyset is captured in lake_name.1.  
 
 # ia_location -------------------------------------------------------------
 
@@ -249,13 +249,13 @@ ia[ ,.N , county]
 ia_locs[ , .N, county]
 
 ia[ , county := tolower(county) , ]
-colnames(ia_locs)[colnames(ia_locs)== "First SiteName"] <- "lake_name"
+colnames(ia_locs)[colnames(ia_locs)== "First SiteName"] <- "lake_name.1"
 
 
 # get the county names out of the lake names:
-ia[str_detect(lake_name, "\\("), .N, county]
-ia[str_detect(lake_name, "\\("), .N, .(lake_name, county)]
-ia[str_detect(lake_name, "\\(") , lake_name := gsub("\\s*\\([^\\)]+\\)", "", lake_name), ]
+ia[str_detect(lake_name.1, "\\("), .N, county]
+ia[str_detect(lake_name.1, "\\("), .N, .(lake_name.1, county)]
+ia[str_detect(lake_name.1, "\\(") , lake_name.1 := gsub("\\s*\\([^\\)]+\\)", "", lake_name.1), ]
 
 #misspelled co name:
 ia_locs[county == "pottawattamie", county := "pottawatamie"]
@@ -263,37 +263,37 @@ ia_locs[county == "pottawattamie", county := "pottawatamie"]
 
 
 #tidy up the lake names
-ia_locs[ , lake_name := gsub(" park", "", gsub("lake ", "", gsub(" lake","", gsub(" pond","", tolower(lake_name))))), ]
-ia[ , lake_name := gsub(" park", "", gsub("lake ", "", gsub(" lake","", gsub(" pond","", tolower(lake_name))))), ]
-ia[lake_name == "ave. of the saints", lake_name := "avenue of the saints" ]
-ia_locs[str_detect(lake_name, "osceola"), lake_name := c("east osceola", "west osceola", "iowa")]
-ia_locs[str_detect(lake_name, "storm"), lake_name:= "storm"]
-ia_locs[str_detect(lake_name, "silver"), lake_name := gsub("\\s*\\([^\\)]+\\)", "", lake_name) ]
-ia_locs[str_detect(lake_name, "lake"), lake_name := gsub("\\s*\\([^\\)]+\\)", "", lake_name) ]
+ia_locs[ , lake_name.1 := gsub(" park", "", gsub("lake ", "", gsub(" lake","", gsub(" pond","", tolower(lake_name.1))))), ]
+ia[ , lake_name.1 := gsub(" park", "", gsub("lake ", "", gsub(" lake","", gsub(" pond","", tolower(lake_name.1))))), ]
+ia[lake_name.1 == "ave. of the saints", lake_name.1 := "avenue of the saints" ]
+ia_locs[str_detect(lake_name.1, "osceola"), lake_name.1 := c("east osceola", "west osceola", "iowa")]
+ia_locs[str_detect(lake_name.1, "storm"), lake_name.1:= "storm"]
+ia_locs[str_detect(lake_name.1, "silver"), lake_name.1 := gsub("\\s*\\([^\\)]+\\)", "", lake_name.1) ]
+ia_locs[str_detect(lake_name.1, "lake"), lake_name.1 := gsub("\\s*\\([^\\)]+\\)", "", lake_name.1) ]
 ia[ , county := gsub("'", "", county)]
-ia[str_detect(lake_name, "beed") ,lake_name := "beeds" ]
-ia_locs[str_detect(lake_name, "west swan"), lake_name := "west swan"]
-ia_locs[str_detect(lake_name, "twelve mile"), lake_name := "twelve mile" ]
-ia_locs[str_detect(lake_name, "white oak"), lake_name := "white oak" ]
-ia_locs[str_detect(lake_name, "red rock"), lake_name := "red rock" ]
-ia_locs[str_detect(lake_name, "crawford creek"), lake_name := "crawford creek" ]
+ia[str_detect(lake_name.1, "beed") ,lake_name.1 := "beeds" ]
+ia_locs[str_detect(lake_name.1, "west swan"), lake_name.1 := "west swan"]
+ia_locs[str_detect(lake_name.1, "twelve mile"), lake_name.1 := "twelve mile" ]
+ia_locs[str_detect(lake_name.1, "white oak"), lake_name.1 := "white oak" ]
+ia_locs[str_detect(lake_name.1, "red rock"), lake_name.1 := "red rock" ]
+ia_locs[str_detect(lake_name.1, "crawford creek"), lake_name.1 := "crawford creek" ]
 
 
 
-ia_locs[str_detect(lake_name, "crawford creek"), ]
+ia_locs[str_detect(lake_name.1, "crawford creek"), ]
 
 names(ia_locs)[names(ia_locs)=="state"] <- "state.geoloc"
 
 
 #try merge
-ia <- merge(ia, ia_locs, by = c("lake_name", "county"), all.x = T, suffixes = c(".x", ".y"), no.dups = TRUE)
+ia <- merge(ia, ia_locs, by = c("lake_name.1", "county"), all.x = T, suffixes = c(".x", ".y"), no.dups = TRUE)
 
 
 #percent with sucessful georeferences:
 ia[!is.na(Longitude), .N]/ia[,.N]
 
 # the un referenced/ambiguous LAA samples (n by lake)
-ia[is.na(Longitude), .(n_LAA_obs=.N) , .(lake_name, county, lake_id)]
+ia[is.na(Longitude), .(n_LAA_obs=.N) , .(lake_name.1, county, lake_id)]
 
 names(ia) <- tolower(names(ia))
 
@@ -329,7 +329,7 @@ ia[, date_clean :=  as.IDate(date.1)]
 
 hist(ia[!is.na(date_clean) ,yday(date_clean)])
 
-#now populate some dates where only mo or season provided (set to 15 if mo give, or season date approximated from histogram here^)
+#now populate some dates where only mo or season provided (set to 15th if mo given, or season date approximated from histogram here^)
 
 ia_datefill <- transpose(keep.names = "oldname", data.table(fall = "2 Oct",
                                                           july = "15 July",
@@ -453,14 +453,14 @@ il <- rbindlist(list(il_aged_fish_surveys_28Dec2022,
 
 
 il_aged_fish_surveys_28Dec2022[!is.na(age)&
-     !age %in% c("TRUE", "FALSE"), .N, .(state, county, lake_name, lake_id, lat_unspec, lon_unspec) ]
+     !age %in% c("TRUE", "FALSE"), .N, .(state, county, lake_name.1, lake_id, lat_unspec, lon_unspec) ]
 
-il_catch_age_effort_17Jan22[!is.na(age), .N, .(state, county, lake_name, lake_id, lat_unspec, lon_unspec, age) ]
+il_catch_age_effort_17Jan22[!is.na(age), .N, .(state, county, lake_name.1, lake_id, lat_unspec, lon_unspec, age) ]
 
-il[!is.na(age)&!age %in% c("TRUE", "FALSE"), .N, .(state, county, lake_name, lake_id, lat_unspec, lon_unspec) ]
+il[!is.na(age)&!age %in% c("TRUE", "FALSE"), .N, .(state, county, lake_name.1, lake_id, lat_unspec, lon_unspec) ]
 
 # note bad behavior in the age merge in rbindlist (ages T/F is converted to 1/0 )
-il[!is.na(age), .("meanage" = mean(age), "meanlength"= mean(length.1)) , .(state, county, lake_name, lake_id, lat_unspec, lon_unspec) ]
+il[!is.na(age), .("meanage" = mean(age), "meanlength"= mean(length.1)) , .(state, county, lake_name.1, lake_id, lat_unspec, lon_unspec) ]
 
 
 il <- il_aged_fish_surveys_28Dec2022
@@ -470,7 +470,7 @@ names(il)
 str(il)
 
 
-cols <- c("state", "county","lake_name", "lake_id", "lat_unspec", "lon_unspec",  #loc dat
+cols <- c("state", "county","lake_name.1", "lake_id", "lat_unspec", "lon_unspec",  #loc dat
           "year","date.1", #date dat
           "species.1", "age", "length.1", #core fish dat
           "weight.1", "weight_unit.1", "aging_structure", "survey_id", "reproductive_condition_notes"  #extra useful bits
@@ -480,7 +480,7 @@ setcolorder(il,c(cols))
 
 # il_location -------------------------------------------------------------
 
-il[ , .N, .(state, county, lake_name, lake_id, lat_unspec, lon_unspec) ]
+il[ , .N, .(state, county, lake_name.1, lake_id, lat_unspec, lon_unspec) ]
 
 il[ ,"latitude" := lat_unspec , ]
 il[ ,"longitude" := lon_unspec , ]
@@ -569,13 +569,13 @@ in_reservoir_age_effort_16Aug2022[ , .N , survey_id ]
 
 
 #misnumbered survey ID
-indy[survey_id == 373 | survey_id == 273, .N, lake_name]
-indy[lake_name == "Cypress Lake", survey_id := 273 ]
+indy[survey_id == 373 | survey_id == 273, .N, lake_name.1]
+indy[lake_name.1 == "Cypress Lake", survey_id := 273 ]
 
-in_reservoir_age_effort_16Aug2022[lake_name == "Brookville", survey_id]
+in_reservoir_age_effort_16Aug2022[lake_name.1 == "Brookville", survey_id]
 
 # The following survey ID has no match in th join... based on the funky low N in #478 and the fact the 479 is a survey on Ferdinand State forest from another IN file... change survey_id to 478 where 479
-indy[survey_id %in% c(471, 478, 484, 486, 479) , .N , .(survey_id, state, lake_name, survey_id) ]
+indy[survey_id %in% c(471, 478, 484, 486, 479) , .N , .(survey_id, state, lake_name.1, survey_id) ]
 indy[survey_id == 479, survey_id := 478 ]
 
 
@@ -586,7 +586,7 @@ indy <- merge(indy, in_reservoir_age_effort_16Aug2022, by = "survey_id", all.x =
 any(names(indy) == "year")
 
 
-cols <- c("state.laa", "state.effort", "lake_name.laa", "lake_name.effort", "survey_id",  "lat_unspec", "lon_unspec", #loc dat
+cols <- c("state.laa", "state.effort", "lake_name.1.laa", "lake_name.1.effort", "survey_id",  "lat_unspec", "lon_unspec", #loc dat
           "date.1", "end_date",  #date dat
           "species.1", "age", "length.1", "length_unit.1", #core fish dat
           "weight.1", "weight_unit.1", "aging_structure" #extra useful bits
@@ -595,11 +595,11 @@ setcolorder(indy,c(cols))
 
 # in_loc ------------------------------------------------------------------
 
-indy[ , .N , .(survey_id, state.laa, state.effort, lake_name.laa, lake_name.effort, survey_id,  lat_unspec, lon_unspec) ]
+indy[ , .N , .(survey_id, state.laa, state.effort, lake_name.1.laa, lake_name.1.effort, survey_id,  lat_unspec, lon_unspec) ]
 
-indy[ , c("state.effort", "lake_name.effort") := NULL ]
+indy[ , c("state.effort", "lake_name.1.effort") := NULL ]
 
-indy[ , .(number_of_aged_fish = .N) , .(survey_id, state.laa, lake_id, lake_name.laa, survey_id,  lat_unspec, lon_unspec, date.1) ]
+indy[ , .(number_of_aged_fish = .N) , .(survey_id, state.laa, lake_id, lake_name.1.laa, survey_id,  lat_unspec, lon_unspec, date.1) ]
 
 indy[ ,"latitude" := lat_unspec , ]
 indy[ ,"longitude" := lon_unspec , ]
@@ -614,7 +614,10 @@ indy[ , c("state.laa") := NULL , ]
 
 # in_date -----------------------------------------------------------------
 
-indy[ , date.1 := as.IDate(date.1) , ]
+indy[ , unique(date.1) , ]
+indy[ , summary(as.IDate(date.1, format = "%m/%d/%y")) , ]
+
+indy[ , date.1 := as.IDate(date.1, format = "%m/%d/%y") , ]
 
 indy[, date_clean :=  date.1]
 
@@ -701,9 +704,9 @@ colnames(ne)
 
 ne[ , .N , .(lake_id) ]
 
-ne[ , lake_name := word(lake_id, start = 1, end = -3 , sep = fixed('_')) ]
+ne[ , lake_name.1 := word(lake_id, start = 1, end = -3 , sep = fixed('_')) ]
 
-ne[ , .N , .(lake_name, lake_id) ]
+ne[ , .N , .(lake_name.1, lake_id) ]
 
 #no lat/longs - need better lake keying
 
@@ -766,9 +769,9 @@ colnames(on)
 
 on[ , .N , .(lake_id, state) ]
 
-on[ , lake_name := word(lake_id, start = 1, end = -2 , sep = fixed('_')) ]
+on[ , lake_name.1 := word(lake_id, start = 1, end = -2 , sep = fixed('_')) ]
 
-on[ , .N , .(lake_name, lake_id, state) ]
+on[ , .N , .(lake_name.1, lake_id, state) ]
 
 #no lat/longs - need better lake keying
 
@@ -843,14 +846,14 @@ mi_statustrends_lenage_20May2021[!survey_id %in% mi_statustrends_catch_16Mar2021
 
 mi_statustrends_lenage_20May2021[!survey_id %in% mi_statustrends_catch_16Mar2021[ ,survey_id], .N , .(survey_id, lake_id, secondary_lake_id) ]
 
-mi_statustrends_catch_16Mar2021[ , .N,.(survey_id, lake_id, lake_name, county, lat_unspec, lon_unspec) ]
+mi_statustrends_catch_16Mar2021[ , .N,.(survey_id, lake_id, lake_name.1, county, lat_unspec, lon_unspec) ]
 
 mi <- merge(mi_statustrends_lenage_20May2021, 
-            mi_statustrends_catch_16Mar2021[ , .N,.(survey_id, lake_id, lake_name, county, lat_unspec, lon_unspec)][ , N := NULL]
+            mi_statustrends_catch_16Mar2021[ , .N,.(survey_id, lake_id, lake_name.1, county, lat_unspec, lon_unspec)][ , N := NULL]
             , by = c("survey_id", "lake_id"), all.x = T)
 
 colnames(mi)
-cols <- c("state", "county", "lake_name", "lake_id", "secondary_lake_id", "lon_unspec", "lat_unspec",  #loc dat
+cols <- c("state", "county", "lake_name.1", "lake_id", "secondary_lake_id", "lon_unspec", "lat_unspec",  #loc dat
           "date.1", #date dat
           "species.1", "length.1", "length_unit.1", #core fish dat
           "aging_structure" #extra useful bits
@@ -875,8 +878,22 @@ names(mi)[names(mi)== "lon_unspec"] <- "longitude"
 
 mi[ , unique(date.1) , ]
 
-mi[ str_detect(date.1, "SAMPLE"), date.temporary :=  as.IDate(word(date.1, -1, sep = ":"), format = "%m/%d/%Y") , ]
-mi[ str_detect(date.1, "SAMPLE", negate = T), date.temporary := as.IDate(date.1, format = "%d-%B-%y")]
+mi[ , sort(unique(word(date.1, 3, sep = "-"))) ,]
+
+mi[ word(date.1, 3, sep = "-") %in% c("66", "79") , ]
+
+mi[ word(date.1, 3, sep = "-") == "66" , ]
+mi[ word(date.1, 3, sep = "-") == "79" , ]
+
+mi[ word(date.1, 3, sep = "-") %in% c("66", "79") , unique(date.1) , ]
+
+mi[date.1 == "17-May-66", date.1 := "17-May-06", ]
+mi[date.1 == "18-Jun-66", date.1 := "18-Jun-06", ]
+mi[date.1 == "22-May-66", date.1 := "22-May-06", ]
+mi[date.1 == "15-Oct-79", date.1 := "15-Oct-09", ]
+
+mi[ , date.temporary := as.IDate(date.1, format = "%d-%B-%y")]
+
 
 mi[ , .N  , is.na(date.temporary) ]
 
@@ -976,7 +993,7 @@ mn <- mn_aged_fish_v2_20apr2023
 
 
 colnames(mn)
-cols <- c("state", "county", "lake_name", "lake_id", "survey_id", "site_id.1" ,  #loc dat
+cols <- c("state", "county", "lake_name.1", "lake_id", "survey_id", "site_id.1" ,  #loc dat
           "date.1", "date.2", #date dat
           "species.1", "age", "length.1", "length_unit.1", "species.2", #core fish dat
           "aging_structure", "sex", "weight.1", "weight_unit.1",  "young_of_year"  #extra useful bits
@@ -1068,7 +1085,7 @@ wi <- wi_inland_lenage_19Mar2021
 
 
 colnames(wi)
-cols <- c("state", "county", "lake_name", "lake_id", "survey_id",  #loc dat
+cols <- c("state", "county", "lake_name.1", "lake_id", "survey_id",  #loc dat
           "date.1", #date dat
           "species.1", "age", "length.1", "length_unit.1", #core fish dat
           "aging_structure", "sex", "weight.1", "weight_unit.1" #extra useful bits
@@ -1081,7 +1098,7 @@ wi[ ,.N , age]
 
 # wi_locs -----------------------------------------------------------------
 
-wi[ , .N , .(state, county, lake_name, lake_id) ]
+wi[ , .N , .(state, county, lake_name.1, lake_id) ]
 
 colnames(wi_locs)[colnames(wi_locs)=="lake.id"] <- "lake_id"
 
@@ -1096,9 +1113,9 @@ wi[ , c("lat", "long", "state.y") := NULL , ]
 
 colnames(wi)[colnames(wi)=="state.x"] <- "state"
 
-wi[ , .N , .(state, county, lake_name, lake_id, latitude, longitude) ]
+wi[ , .N , .(state, county, lake_name.1, lake_id, latitude, longitude) ]
 
-wi[ is.na(latitude), .N , .(county, lake_name, lake_id) ]
+wi[ is.na(latitude), .N , .(county, lake_name.1, lake_id) ]
 
 #manual locs for some of those:
 wi[ is.na(latitude) & lake_id == 261100  , `:=`(latitude = 44.34026959720516, longitude = -89.15008499972733) ,]#chain_o'_lakes
@@ -1192,7 +1209,7 @@ sd <- rbindlist(list(rbindlist(list(sd_length_age_4Oct2021,
                 use.names = TRUE)
 
 colnames(sd)
-cols <- c("state", "lake_name", "survey_id",  #loc dat
+cols <- c("state", "lake_name.1", "survey_id",  #loc dat
           "date.1", #date dat
           "species.1", "age", "length.1", #core fish dat
           "aging_structure", "sex", "weight.1" #extra useful bits
@@ -1206,7 +1223,7 @@ sd[ ,.N , age]
 
 # sd_location -------------------------------------------------------------
 
-sd[ , .N , .(survey_id, lake_name, date.1) ]
+sd[ , .N , .(survey_id, lake_name.1, date.1) ]
 
 names(sd_locs) <- word(names(sd_locs),1,sep = ",")
 
@@ -1231,9 +1248,9 @@ sd[ is.na(Longitude), .N]
 colnames(sd)
 
 #there are some fish obs that went unmatched: here I directly match these to a lake ID (instead of a survey)
-sd[is.na(Name), .N , .(lake_name, StateID) ][,StateID]
+sd[is.na(Name), .N , .(lake_name.1, StateID) ][,StateID]
 
-sd_locs[ StateID %in% sd[is.na(Name), .N , .(lake_name, StateID) ][,StateID]]
+sd_locs[ StateID %in% sd[is.na(Name), .N , .(lake_name.1, StateID) ][,StateID]]
 
 sd[is.na(Name),   , ][sd_locs[!duplicated(StateID)], on = "StateID"][is.na(i.Longitude)]
 
@@ -1253,13 +1270,13 @@ sd <- rbindlist(list(sd.a,sd.b), fill = TRUE , use.names = TRUE)
 
 rm(sd.a, sd.b)
 
-sd[is.na(Longitude), .N , .(survey_id, lake_name, date.1, species.1) ]
+sd[is.na(Longitude), .N , .(survey_id, lake_name.1, date.1, species.1) ]
 
 sd[ ,"latitude" := Latitude , ]
 sd[ ,"longitude" := Longitude , ]
 
 colnames(sd)
-sd[is.na(lake_name) , lake_name := Name,]
+sd[is.na(lake_name.1) , lake_name.1 := Name,]
 
 sd[ , c("Latitude", "Longitude", "FMA", "Waterbody", "ObjectID", "Station", "Method", "MethodCode", "Effort", "Acres", "Name") := NULL , ]
 
@@ -1373,7 +1390,7 @@ laa <-rbindlist(list(ar,
 
 sort(colnames(laa))
 
-cols <- c("state", "county","lake_name", "lake_id", "secondary_lake_id", "site_id.1", "latitude", "longitude",   #loc dat
+cols <- c("state", "county","lake_name.1", "lake_id", "secondary_lake_id", "site_id.1", "latitude", "longitude",   #loc dat
           "year","date_clean", "survey_id", #date dat
           "species.1", "age", "length.1", "length_unit.1", "sample_id.1" , "sample_id.2",  #core fish dat
           "backcalculated_age",  "weight.1", "weight_unit.1", "aging_structure", "aging_method", "sex", "aging_data_notes.1", "aging_data_notes.2", "young_of_year", "reproductive_condition_notes"   #extra useful bits
@@ -1389,7 +1406,7 @@ laa[ !is.na(length.1)& !is.na(age) & !is.na(latitude), .("count" = .N, "prop_tot
 
 
 
-crosswalk_fodder <- laa[ , .N , .(state, county, lake_name, lake_id, secondary_lake_id, latitude, longitude)]
+crosswalk_fodder <- laa[ , .N , .(state, county, lake_name.1, lake_id, secondary_lake_id, latitude, longitude)]
 
 # save(laa, file = "scripts&data/data/output/length_age_merged.RData")
 
