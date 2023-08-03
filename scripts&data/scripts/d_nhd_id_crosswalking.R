@@ -433,20 +433,7 @@ nhds[  , unique(gsub("MGLP_", "", MGLP_ID)) ]
 # merge back together -----------------------------------------------------
 
 laa_nhds <- 
-  rbindlist(list(
-    rbindlist(list(
-      rbindlist(list(
-        rbindlist(list(mi_laa,
-                       mn_laa),
-                  fill = TRUE,
-                  use.names = TRUE),
-        wi_laa),
-        fill = TRUE,
-        use.names = TRUE),
-      ia_laa),
-      fill = TRUE,
-      use.names = TRUE),
-    in_laa),
+  rbindlist(list(mi_laa,mn_laa,wi_laa, ia_laa, in_laa, laa[!(state %in% c("Michigan", "Minnesota", "Wisconsin", "Iowa", "Indiana"))]),
     fill = TRUE,
     use.names = TRUE)
 
@@ -468,11 +455,10 @@ laa_nhds <-
 
 
 
-
-
 # Graveyard -------------------------------------------------------------------------
 
-
+laa_nhds[ , .N , .(state,county,lake_name.1, lake_id, NHD_ID) ][ , .N , is.na(NHD_ID)]
+365002/1799847
 
 
 

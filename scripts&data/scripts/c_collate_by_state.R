@@ -121,7 +121,7 @@ ar[ , species.1 :=
 
 #age
 ar[ , .N , age ]
-
+  ar[ , summary(age) , ]
 
 # ar_length ---------------------------------------------------------------
 
@@ -396,7 +396,7 @@ ia[ , hist(age) , ]
 
 ia[ , .N , age]
 
-ia[is.na(age) , , ]
+ia[is.na(age) , .N , species.1]
 ia[age == -1]
 
 ia <- ia[!is.na(age) & age != -1]
@@ -441,7 +441,7 @@ ia[, c("state.geoloc") := NULL, ]
 # il ----------------------------------------------------------------------
 
 il_aged_fish_surveys_28Dec2022[ , .N , age ]
-il_catch_age_effort_17Jan22[ , .N , age] # no reason to import these data (I think they just have T/F for age)
+il_catch_age_effort_17Jan22[ , .N , age] # no reason to import these data (they just have T/F for age)
 
 
 
@@ -641,6 +641,8 @@ indy[ species.1 == "bluegill", species.1 :=  "bluegill_sunfish" ,  ,  ]
 
 indy[ , .N , age]
 
+indy[species.1 == "walleye", hist(age)]
+
 
 # in_length ---------------------------------------------------------------
 
@@ -734,6 +736,8 @@ ne[ , species.1 := gsub(" ", "_", tolower(species.1))]
 
 ne[ ,.N, age]
 
+ne[ species.1 == "walleye" , hist(age) , ]
+
 
 # ne_length ---------------------------------------------------------------
 
@@ -799,6 +803,7 @@ on[ , species.1 := gsub(" ", "_", tolower(species.1))]
 
 on[ , .N , age]
 
+on[species.1 == "walleye", hist(age)]
 
 # on_length ---------------------------------------------------------------
 
@@ -1075,6 +1080,9 @@ mn[ ,max(length.1), species.1][ order(species.1)]
 
 rm(mn_aged_fish_v2_20apr2023, mn_locs)
 
+plot(length.1~age, data = mn[species.1=="walleye"])
+
+
 colnames(mn)
 
 
@@ -1175,6 +1183,8 @@ wi[species.1 == "northern_pike_x_muskellunge", species.1 := "tiger_muskellunge" 
 # wi_age ------------------------------------------------------------------
 
 wi[ , .N , age ]
+
+wi[species.1 == "walleye" , hist(age) ,]
 
 
 # wi_length ---------------------------------------------------------------
