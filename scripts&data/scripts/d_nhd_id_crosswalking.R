@@ -443,18 +443,6 @@ laa_nhds <-
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 # Graveyard -------------------------------------------------------------------------
 
 laa_nhds[ , .N , .(state,county,lake_name.1, lake_id, NHD_ID) ][ , .N , is.na(NHD_ID)]
