@@ -28,6 +28,7 @@
 #' 
 #' To Do List and Modifications: 
 #' - We need to know the scope of these aged fish data relative to full MW fish data 
+#' - We need to update locs with the MSU crosswalk update
 #'   
 #' 
 
@@ -757,6 +758,13 @@ mw_ages[ , hist(yday(date)) ,  ]
 # gam fit to lifetime gdd -------------------------------------------------
 
 # follows Gavin Simpson vignette https://fromthebottomoftheheap.net/2021/02/02/random-effects-in-gams/
+
+
+# Specifyoing interactions:
+# https://stats.stackexchange.com/questions/519433/gam-and-multiple-continuous-continuous-interactions-tensor-smooths
+
+# https://r.qcbs.ca/workshop08/book-en/gam-with-interaction-terms.html
+
 
 # walleye_gam <- gam(length ~ est.age + life_gdd +
 #                 s(nhdhr.id, bs = 're') +
