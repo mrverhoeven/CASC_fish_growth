@@ -46,6 +46,7 @@ library(tidyverse)
 library(ggplot2)
 library(data.table)
 library(mwlaketemps)
+library(mwlaxeref)
 library(GGally)
 library(VCA)
 library(mgcv)
@@ -67,7 +68,7 @@ f_dowle3natozeros = function(DT, x) {
 # connect to data -------------------------------------------------
 #' ## Connect to Data
 
-#here note that we have chose to use the 
+#here note that we have chosen to use the "most common structure" ALK, which means we rely on the decisions made by managers to 
 
 #open the connection to MN data 
 mn_ALK <- open_dataset(sources = "scripts&data/data/input/age_assigned_data/mn_halk_aged_data/most_common_structures") #note that you point this fn at the parent folder of the parquet
@@ -109,9 +110,6 @@ mn_ALK %>%
 #which columns do we need?
 glimpse(ia_ALK)
 
-# 
-
-
 #one state at a time:
 ia_ALK %>% 
   filter(!is.na(est.age))  %>% # skip any fish with no estimated age
@@ -144,6 +142,9 @@ wi_ALK %>%
   ) %>% # only relevant cols
   collect() %>% #bring in to env
   {. ->> wi_LA}
+
+glimpse(in_ALK)
+
 in_ALK %>% 
   filter(!is.na(est.age))  %>% # skip any fish with no estimated age
   select(state, county, lake.name, lake.id, nhdhr.id,
@@ -196,7 +197,6 @@ rm(ia_ALK,
 # combine data ------------------------------------------------------------
 
 
-
 #mi limited ages --only for years in 2003-2010 
 mi_LA %>% 
   group_by(year, is.na(length)) %>% 
@@ -230,10 +230,53 @@ rm(ia_LA,
    wi_LA)
 
 
+# fix some NHDs -----------------------------------------------------------
 
 
+#fix funky prefixes on nhdhr.id
+mw_ages[ , .N ,.("goodNHD" = !is.na(nhdhr.id), state)]
+mw_ages[!is.na(nhdhr.id) , .N , nhdhr.id ]
 
-# check and summarise data ------------------------------------------------
+mw_ages[str_detect(nhdhr.id, "nhdhr_"), .N, state]
+mw_ages[is.na(nhdhr.id), .N, .(state, alk, "no_age_assigned" = is.na(est.age))]# this suggests it is worth looping in g
+
+
+mw_ages[, nhdhr.id := gsub("nhdhr_", "", nhdhr.id), ]
+
+
+# loop in fixed up LAGOS ids from MSU
+msu_cw <- fread("scripts&data/data/input/MGLP_FISH_LAKES_all_verified_03122024.csv")
+
+mw_ages[ , .N ,state ]
+msu_cw[ , .N , STATE ]
+
+mw_ages[ , state := fcase(state == "Minnesota",  "MN",
+                           state == "Iowa", "IA",
+                           state == "Illinois", "IL",
+                           state == "Indiana", "IN",
+                           state == "mi", "MI",
+                           state == "South Dakota", "SD",
+                           state == "Wisconsin", "WI"),
+                          ]
+
+
+mw_ages[msu_cw, on = .(lake.name = LAKE_NAME, state = STATE, county = COUNTY, lake.id = STATE_ID ),
+        lagos_id := LAGOSLAKEID]
+
+
+rm(msu_cw)
+
+mw_ages <- lagos_to_nhdhr(mw_ages, from_colname = "lagos_id" ) 
+
+mw_ages[ , .N , .("xisNA" = is.na(nhdhr.id.x), "yisNA" = is.na(nhdhr.id.y)) ]
+
+mw_ages[is.na(nhdhr.id.x), nhdhr.id.x := nhdhr.id.y , ]
+
+mw_ages[ , nhdhr.id.y := NULL , ]
+
+setnames(mw_ages, old = "nhdhr.id.x" , new = "nhdhr.id" )
+
+# check and summarize data ------------------------------------------------
 
 
 #' ## Data checks
@@ -292,7 +335,11 @@ mw_ages[ , .N , est.age ]
 mw_ages[ , obs.id.2 := .I , ]
 
 #get age restructured and add cols fo the reshape
-mw_ages <- uncount(mw_ages, weights = est.age, .remove = FALSE, .id = "years_ago") 
+# expanded <- melt(DT, id.vars = "Year", variable = "col")[, col := rleid(col)][
+#   , .(i = seq_len(value)), by = .(Year, col)]
+
+
+mw_ages <- uncount(mw_ages, weights = est.age, .remove = FALSE, .id = "years_ago")
   mw_ages[ , years_ago := years_ago-1 , ]
   mw_ages[ , year_gdd := year-years_ago , ]
   mw_ages[ , age_year_gdd := est.age-years_ago ,]
@@ -344,6 +391,9 @@ head(mw_ages)
 #add lifetime gdd:
 mw_ages[ , life_gdd := rowSums(.SD) , .SDcols = paste("y", c(1:29), sep = "_")  ]
 
+mw_ages[ , mean_ann_gdd := life_gdd/est.age , ]
+
+
 # summarize range of lifetime gdd vals
 mw_ages[ , .(stat = names(summary(life_gdd)),
              value = summary(life_gdd),
@@ -354,6 +404,7 @@ mw_ages[ , .(stat = names(summary(life_gdd)),
 mw_ages[ , .(stat = names(summary(y_1)),
              value = summary(y_1),
              units = "gdd"), species]
+
 
 
 # outliers: speciesXage&gdd length -------------------------------------------------
@@ -432,8 +483,19 @@ mw_ages[length > upper_3sd_len | length < lower_3sd_len , .N , ]
 mw_ages <- mw_ages[!(length > upper_3sd_len | length < lower_3sd_len),]
 
 
+# export data products ----------------------------------------------------
+
 
 # save(mw_ages, file = "fish_gdds_ageALKed.rds")
+# load(file = "fish_gdds_ageALKed.rds")
+# setDT(mw_ages)
+# EXPORT DATA for 
+# mw_ages[ , `:=` ("length.bin" = NULL, "length.bin.unit" = NULL, "obs.id.2" = NULL , "obs.id" = NULL, "lagos_id" = NULL, "upper_3sd_len" = NULL, "lower_3sd_len" = NULL, "gdd_bin" = NULL)  ]
+# set(mw_ages, i = NULL, j = paste("y", c(23:29), sep = "_"), NULL)
+# fwrite(mw_ages[alk == "year"], "scripts&data/data/output/mw_ALKd_thermalexp.csv" )
+  # ALK_temp <- fread("scripts&data/data/output/mw_ALKd_thermalexp.csv")
+  # ALK_temp[ , .N , .(state, species) ]
+
 
 
 # exclude all est.age over 15y & drop those cols
@@ -443,16 +505,11 @@ set(mw_ages, i = NULL, j = paste("y", c(16:29), sep = "_"), NULL)
 
 # gdd_classes -------------------------------------------------------------
 
-mw_ages[ , mean_ann_gdd := life_gdd/est.age , ]
 
 mw_ages[mean_ann_gdd > 3110, gdd_grp := "m.gdd.3110+"  , ]
 mw_ages[mean_ann_gdd <= 3110 & mean_ann_gdd >= 2250, gdd_grp := "m.gdd.2250-3110"  , ]
 mw_ages[mean_ann_gdd < 2250, gdd_grp := "m.gdd.2250-"  , ]
 
-
-# save(mw_ages, file = "fish_gdds_ageALKed.rds")
-# load(file = "fish_gdds_ageALKed.rds")
-# setDT(mw_ages)
 
 mw_ages[ , c("year", "nhdhr.id") := lapply(.SD, as.factor)  , .SDcols = c("year", "nhdhr.id") ]
 
