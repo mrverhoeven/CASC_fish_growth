@@ -494,7 +494,7 @@ mw_ages <- mw_ages[!(length > upper_3sd_len | length < lower_3sd_len),]
 # set(mw_ages, i = NULL, j = paste("y", c(23:29), sep = "_"), NULL)
 # fwrite(mw_ages[alk == "year"], "scripts&data/data/output/mw_ALKd_thermalexp.csv" )
   # ALK_temp <- fread("scripts&data/data/output/mw_ALKd_thermalexp.csv")
-  # ALK_temp[ , .N , .(state, species) ]
+  # ALK_temp[ , .N , .(state) ]
 
 
 
