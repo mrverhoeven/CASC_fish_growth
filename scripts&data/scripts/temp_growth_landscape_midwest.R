@@ -482,9 +482,11 @@ mw_ages[mean_sd_tbl, on = .(species, gdd_bin), `:=` ("upper_3sd_len" = upper_mea
 mw_ages[length > upper_3sd_len | length < lower_3sd_len , .N , ]
 mw_ages <- mw_ages[!(length > upper_3sd_len | length < lower_3sd_len),]
 
-
 # export data products ----------------------------------------------------
 
+#fix a bad structure name
+ALK_temp[ , .N , alk.age.str ]
+ALK_temp[alk.age.str == "otoli" , alk.age.str := "otolith" ,]
 
 # save(mw_ages, file = "fish_gdds_ageALKed.rds")
 # load(file = "fish_gdds_ageALKed.rds")
@@ -496,7 +498,9 @@ mw_ages <- mw_ages[!(length > upper_3sd_len | length < lower_3sd_len),]
   # ALK_temp <- fread("scripts&data/data/output/mw_ALKd_thermalexp.csv")
   # ALK_temp[ , .N , .(state) ]
 
+ALK_temp[  , summary(y_20)   , ]
 
+ALK_temp[alk.age.str == "extra"]
 
 # exclude all est.age over 15y & drop those cols
 mw_ages <- mw_ages[est.age < 16]
